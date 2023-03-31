@@ -678,7 +678,7 @@ Resources:
                           {
                             "file_path": "/home/galaxy/galaxy/database/gravity/log/celery-beat.log",
                             "log_group_name": "galaxy-logs",
-                            "log_stream_name": "{instance_id}-elery-beat-logs",
+                            "log_stream_name": "{instance_id}-celery-beat-logs",
                             "timezone": "Local",
                             "timestamp_format": "%Y-%m-%d %H:%M:%S,%f"
                           }
