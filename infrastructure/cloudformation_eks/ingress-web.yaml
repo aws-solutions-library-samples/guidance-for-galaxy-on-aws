@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    alb.ingress.kubernetes.io/group.name: galaxy
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    meta.helm.sh/release-name: galaxystack
+    meta.helm.sh/release-namespace: galaxy
+  labels:
+    app.kubernetes.io/instance: galaxystack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: galaxy
+    app.kubernetes.io/version: "23.0"
+    helm.sh/chart: galaxy-5.7.1
+  name: galaxystack-web
+  namespace: galaxy
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: galaxystack-galaxy
+            port:
+              number: 8080
+        path: /
+        pathType: ImplementationSpecific
