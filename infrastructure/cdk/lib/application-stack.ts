@@ -7,20 +7,19 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
-export interface GalaxyAppStackProps extends cdk.StackProps {
+export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
   databaseCluster: rds.ServerlessCluster;
   rabbitmqCluster: amazonmq.CfnBroker;
   rabbitmqSecret: secretsmanager.ISecret;
-  namespace: string;
-  galaxyAdminEmails: string;
   fileSystem: efs.IFileSystem;
 }
 
-export class GalaxyAppStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: GalaxyAppStackProps) {
+export class ApplicationStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: ApplicationStackProps) {
     super(scope, id, props);
 
+    const namespace : string = this.node.tryGetContext('galaxy.namespace');
 
     const efsStorageClass = new eks.KubernetesManifest(this, "efsStorageClass", {
       cluster: props.eksCluster,
@@ -88,7 +87,7 @@ export class GalaxyAppStack extends cdk.Stack {
           apiVersion: "v1",
           kind: "Namespace",
           metadata: {
-            name: props.namespace,
+            name: namespace,
           },
         },
       ]
@@ -103,7 +102,7 @@ export class GalaxyAppStack extends cdk.Stack {
           kind: "ExternalSecret",
           metadata: {
             name: "galaxy.credentials.postgresql",
-            namespace: props.namespace,
+            namespace: namespace,
           },
           spec: {
             secretStoreRef: {
@@ -146,7 +145,7 @@ export class GalaxyAppStack extends cdk.Stack {
           kind: "ExternalSecret",
           metadata: {
             name: "galaxy.credentials.rabbitmq",
-            namespace: props.namespace,
+            namespace: namespace,
           },
           spec: {
             secretStoreRef: {
@@ -180,22 +179,18 @@ export class GalaxyAppStack extends cdk.Stack {
 
     galaxyEKSSecretRabbitmq.node.addDependency(galaxyEKSNamespace, galaxyEKSSecretStore);
 
-    /////////////////////////////
-    // # GALAXY
-    /////////////////////////////
-
     const galaxyChart = new eks.HelmChart(this, 'galaxyChart', {
       cluster: props.eksCluster,
       chart: 'galaxy',
       release: 'galaxy',
       repository: 'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
-      namespace: props.namespace,
+      namespace: namespace,
       timeout: cdk.Duration.minutes(10),  
       values: {
         configs: {
           "galaxy.yml": {
             galaxy: {
-              admin_users: props.galaxyAdminEmails,
+              admin_users: this.node.tryGetContext("galaxy.adminEmails"),
               require_login: true,
               show_welcome_with_login: true,
             },
@@ -236,7 +231,6 @@ export class GalaxyAppStack extends cdk.Stack {
           }
         },
         rabbitmq: {
-          // enabled: false,
           deploy: false,
           port: 5671,
           protocol: "amqps",
@@ -250,17 +244,11 @@ export class GalaxyAppStack extends cdk.Stack {
           galaxyExistingSecret: 'galaxy.credentials.postgresql',
         },
         refdata: {
-          enabled: true,
+          enabled: false,
+          type: "s3csi",
         },
         s3csi: {
-          deploy: true,
-          storageClass: {
-            mounter: "geesefs",
-            mountOptions: `-o use_cache=/tmp -o endpoint=${cdk.Stack.of(this).region} -o public_bucket=1 -o enable_noobj_cache -o no_check_certificate -o kernel_cache -o ensure_diskfree=5000`,
-          },
-          secret: {
-            endpoint: `https://s3.${cdk.Stack.of(this).region}.amazonaws.com`,
-          }
+          deploy: false,
         },
         cvmfs: {
           deploy: false,
@@ -307,7 +295,7 @@ export class GalaxyAppStack extends cdk.Stack {
     const galaxyDNS = new eks.KubernetesObjectValue(this, 'galaxyDNS', {
       cluster: props.eksCluster,
       objectType: "ingress",
-      objectNamespace: props.namespace,
+      objectNamespace: namespace,
       objectName: 'galaxy',
       jsonPath: '.status.loadBalancer.ingress[0].hostname',
     })

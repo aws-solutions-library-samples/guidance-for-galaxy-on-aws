@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/galaxycdk.ts",
+  "app": "npx ts-node --prefer-ts-exts bin/galaxy.ts",
   "watch": {
     "include": [
       "**"
@@ -17,6 +17,16 @@
     ]
   },
   "context": {
+    "galaxy.namespace": "galaxy",
+    "galaxy.adminEmails": "",
+
+    "rabbitmq.cluster": false,
+    "rabbitmq.instance": "mq.t3.micro",
+  
+    "eks.default.min-size": 1,
+    "eks.default.max-size": 5,
+    "eks.default.desired-size": 3,
+
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [

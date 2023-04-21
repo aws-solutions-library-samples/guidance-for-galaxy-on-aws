@@ -1,8 +1,8 @@
 {
-  "name": "galaxycdk",
+  "name": "galaxy",
   "version": "0.1.0",
   "bin": {
-    "galaxycdk": "bin/galaxycdk.js"
+    "galaxy": "bin/galaxy.js"
   },
   "scripts": {
     "build": "tsc",

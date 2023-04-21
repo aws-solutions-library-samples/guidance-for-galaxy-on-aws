@@ -8,19 +8,17 @@ import * as efs from 'aws-cdk-lib/aws-efs';
 import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
-export interface GalaxyInfraStackProps extends cdk.StackProps {
+export interface InfrastructureStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
-  rabbitMQAsCluster: boolean;
-  rabbitMQInstanceSize: "mq.t3.micro" | "mq.m5.large" | "mq.m5.xlarge" | "mq.m5.2xlarge" | "mq.m5.4xlarge";
 }
 
-export class GalaxyInfraStack extends cdk.Stack {
+export class InfrastructureStack extends cdk.Stack {
   public readonly databaseCluster: rds.ServerlessCluster;
   public readonly rabbitmqCluster: amazonmq.CfnBroker;
   public readonly rabbitmqSecret: secretsmanager.ISecret;
   public readonly fileSystem: efs.IFileSystem;
 
-  constructor(scope: Construct, id: string, props: GalaxyInfraStackProps) {
+  constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
 
     /////////////////////////////
@@ -68,7 +66,7 @@ export class GalaxyInfraStack extends cdk.Stack {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: 'administrator' }),
         generateStringKey: 'password',
-        excludeCharacters: '"@/\#, :=',
+        excludeCharacters: '"@/\#, :=;\'}?.+%',
         passwordLength: 16,
       },
     });
@@ -79,20 +77,23 @@ export class GalaxyInfraStack extends cdk.Stack {
 
     rabbitmqSecurityGroup.addIngressRule(props.eksCluster.clusterSecurityGroup, ec2.Port.tcp(5671), 'k8s ingress');
 
+    const rabbitMQAsCluster : boolean = this.node.tryGetContext('rabbitmq.cluster');
+    const rabbitMQInstanceSize : "mq.t3.micro" | "mq.m5.large" | "mq.m5.xlarge" | "mq.m5.2xlarge" | "mq.m5.4xlarge" = this.node.tryGetContext('rabbitmq.instance');
+
     this.rabbitmqCluster = new amazonmq.CfnBroker(this, 'rabbitmqCluster', {
       autoMinorVersionUpgrade: true,
       brokerName: 'rabbitmq' + cdk.Aws.STACK_NAME,
-      deploymentMode: props.rabbitMQAsCluster ? 'CLUSTER_MULTI_AZ' : 'SINGLE_INSTANCE',
+      deploymentMode: rabbitMQAsCluster ? 'CLUSTER_MULTI_AZ' : 'SINGLE_INSTANCE',
       engineType: 'RABBITMQ',
       engineVersion: '3.10.10',
-      hostInstanceType: props.rabbitMQInstanceSize,
+      hostInstanceType: rabbitMQInstanceSize,
       publiclyAccessible: false,
       users: [{
         username: this.rabbitmqSecret.secretValueFromJson('username').unsafeUnwrap().toString(),
         password: this.rabbitmqSecret.secretValueFromJson('password').unsafeUnwrap().toString(),
       }],
       securityGroups: [rabbitmqSecurityGroup.securityGroupId],
-      subnetIds: props.rabbitMQAsCluster ? props.eksCluster.vpc.privateSubnets.map(subnet => subnet.subnetId) : [props.eksCluster.vpc.privateSubnets[0].subnetId],
+      subnetIds: rabbitMQAsCluster ? props.eksCluster.vpc.privateSubnets.map(subnet => subnet.subnetId) : [props.eksCluster.vpc.privateSubnets[0].subnetId],
     });
 
     new cdk.CfnOutput(this, 'rabbitmqEndpoint', {
