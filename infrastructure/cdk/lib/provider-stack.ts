@@ -4,6 +4,7 @@ import { Construct } from 'constructs';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
 import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class ProviderStack extends cdk.Stack {
   public readonly eksCluster: eks.ICluster;
@@ -41,6 +42,19 @@ export class ProviderStack extends cdk.Stack {
         new blueprints.addons.CoreDnsAddOn(),
         new blueprints.addons.KubeProxyAddOn(),
         new blueprints.addons.ExternalsSecretsAddOn({}),
+        new blueprints.addons.AwsForFluentBitAddOn({
+          iamPolicies: [
+            new iam.PolicyStatement({
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: ['arn:aws:logs:*:*:*']
+            })
+          ],
+          values: {
+            cloudWatch: {
+              enabled: true
+            }
+          }
+        })
       ];
 
       const eksClusterBuilder = blueprints.EksBlueprint.builder()
