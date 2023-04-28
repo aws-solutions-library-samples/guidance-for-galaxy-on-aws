@@ -34,7 +34,6 @@ export class ProviderStack extends cdk.Stack {
       const addOns: Array<blueprints.ClusterAddOn> = [
         new blueprints.addons.AwsLoadBalancerControllerAddOn(),
         new blueprints.addons.MetricsServerAddOn(),
-        new blueprints.addons.EbsCsiDriverAddOn(), // @todo: check if its still needed
         new blueprints.addons.EfsCsiDriverAddOn(),
         new blueprints.addons.ClusterAutoScalerAddOn(),
         new blueprints.addons.VpcCniAddOn(),

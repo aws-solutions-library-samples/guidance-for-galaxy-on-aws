@@ -10,14 +10,9 @@ const app = new cdk.App();
 const account = process.env.CDK_DEFAULT_ACCOUNT;
 const region = process.env.CDK_DEFAULT_REGION;
 
-app.node.setContext("galaxy.adminEmails", 'yegor@amazon.com');
+app.node.setContext("galaxy.adminEmails", 'yegor@amazon.com,mapk@amazon.de,mibosch@amazon.de');
 
-// app.node.setContext("vpc.id", 'vpc-0b79783c69ed3f8fd');
-// app.node.setContext("eks.clusterName", 'eksClusterStack');
-// app.node.setContext("eks.securityGroupId", 'sg-0c39547363063bcab');
-// app.node.setContext("eks.kubectlRoleArn", 'arn:aws:iam::761128311188:role/eksClusterStack-eksClusterStackCreationRole2E80C23-1VRM7BE1MQ2RZ');
-
-// needs to stay here until PR is merged:
+// needs to stay here until PR is merged and released:
 // https://github.com/aws-quickstart/cdk-eks-blueprints/pull/654
 app.node.setContext("eks.default.instance-type", ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE4));
 

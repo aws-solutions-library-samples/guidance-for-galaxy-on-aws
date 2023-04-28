@@ -77,8 +77,8 @@ export class InfrastructureStack extends cdk.Stack {
 
     rabbitmqSecurityGroup.addIngressRule(props.eksCluster.clusterSecurityGroup, ec2.Port.tcp(5671), 'k8s ingress');
 
-    const rabbitMQAsCluster : boolean = this.node.tryGetContext('rabbitmq.cluster');
-    const rabbitMQInstanceSize : "mq.t3.micro" | "mq.m5.large" | "mq.m5.xlarge" | "mq.m5.2xlarge" | "mq.m5.4xlarge" = this.node.tryGetContext('rabbitmq.instance');
+    const rabbitMQAsCluster: boolean = this.node.tryGetContext('rabbitmq.cluster');
+    const rabbitMQInstanceSize: "mq.t3.micro" | "mq.m5.large" | "mq.m5.xlarge" | "mq.m5.2xlarge" | "mq.m5.4xlarge" = this.node.tryGetContext('rabbitmq.instance');
 
     this.rabbitmqCluster = new amazonmq.CfnBroker(this, 'rabbitmqCluster', {
       autoMinorVersionUpgrade: true,

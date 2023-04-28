@@ -19,6 +19,7 @@
   "context": {
     "galaxy.namespace": "galaxy",
     "galaxy.adminEmails": "",
+    "galaxy.refdataEnabled": true,
 
     "rabbitmq.cluster": false,
     "rabbitmq.instance": "mq.t3.micro",

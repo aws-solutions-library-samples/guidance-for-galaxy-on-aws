@@ -19,7 +19,8 @@ export class ApplicationStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ApplicationStackProps) {
     super(scope, id, props);
 
-    const namespace : string = this.node.tryGetContext('galaxy.namespace');
+    const namespace: string = this.node.tryGetContext('galaxy.namespace');
+    const refdataEnabled: boolean = this.node.tryGetContext('galaxy.refdataEnabled');
 
     const efsStorageClass = new eks.KubernetesManifest(this, "efsStorageClass", {
       cluster: props.eksCluster,
@@ -179,13 +180,28 @@ export class ApplicationStack extends cdk.Stack {
 
     galaxyEKSSecretRabbitmq.node.addDependency(galaxyEKSNamespace, galaxyEKSSecretStore);
 
+    const s3csiValues = {
+      deploy: false, // deployed outside of Galaxy Helm
+      storageClass: {
+        name: "refdata-gxy-data",
+        mounter: "geesefs",
+        singleBucket: "biorefdata",
+        mountOptions: "-o allow_other --dir-mode 0777 --file-mode 0666 --cache /tmp/geesecache --stat-cache-ttl 9m0s --cache-to-disk-hits 1 --no-dir-object --no-implicit-dir --stat-cache-ttl 120m0s --max-disk-cache-fd 4096",
+      },
+      secret: {
+        create: false,
+        usePrefix: true,
+        prefix: "/galaxy/v1",
+      }
+    };
+
     const galaxyChart = new eks.HelmChart(this, 'galaxyChart', {
       cluster: props.eksCluster,
       chart: 'galaxy',
       release: 'galaxy',
       repository: 'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
       namespace: namespace,
-      timeout: cdk.Duration.minutes(10),  
+      timeout: cdk.Duration.minutes(10),
       values: {
         configs: {
           "galaxy.yml": {
@@ -244,12 +260,10 @@ export class ApplicationStack extends cdk.Stack {
           galaxyExistingSecret: 'galaxy.credentials.postgresql',
         },
         refdata: {
-          enabled: false,
+          enabled: refdataEnabled,
           type: "s3csi",
         },
-        s3csi: {
-          deploy: false,
-        },
+        s3csi: s3csiValues,
         cvmfs: {
           deploy: false,
         },
@@ -291,6 +305,43 @@ export class ApplicationStack extends cdk.Stack {
     });
 
     galaxyChart.node.addDependency(efsStorageClass, galaxyEKSSecretPostgresql, galaxyEKSSecretRabbitmq);
+
+    if (refdataEnabled) {
+      const csiS3Secret = new eks.KubernetesManifest(this, "csiS3Secret", {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            apiVersion: "v1",
+            kind: "Secret",
+            metadata: {
+              namespace: namespace,
+              name: "csi-s3-secret",
+            },
+            stringData: {
+              accessKeyID: "",
+              secretAccessKey: "",
+              endpoint: "https://s3.ap-southeast-2.amazonaws.com",
+            }
+          },
+        ]
+      });
+
+      csiS3Secret.node.addDependency(galaxyEKSNamespace);
+
+      // newest version and original image (no overrides in values.yaml)
+      const csiS3Chart = new eks.HelmChart(this, 'csiS3', {
+        cluster: props.eksCluster,
+        chart: 'csi-s3',
+        release: 'csi-s3',
+        repository: 'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
+        namespace: namespace,
+        values: s3csiValues,
+      });
+
+      csiS3Chart.node.addDependency(csiS3Secret);
+      galaxyChart.node.addDependency(csiS3Chart);
+    }
 
     const galaxyDNS = new eks.KubernetesObjectValue(this, 'galaxyDNS', {
       cluster: props.eksCluster,
