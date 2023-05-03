@@ -66,7 +66,7 @@ export class InfrastructureStack extends cdk.Stack {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: 'administrator' }),
         generateStringKey: 'password',
-        excludeCharacters: '"@/\#, :=;\'}?.+%',
+        excludeCharacters: "<>/\"#%{}|\\^~[]`@, :;='.+", // Galaxy helm chart does not URL encode the password as of now
         passwordLength: 16,
       },
     });
