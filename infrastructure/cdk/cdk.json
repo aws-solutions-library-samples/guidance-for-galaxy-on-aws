@@ -28,6 +28,8 @@
     "eks.default.max-size": 5,
     "eks.default.desired-size": 3,
 
+    "rds.backupRetentionInDays": 1,
+
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
