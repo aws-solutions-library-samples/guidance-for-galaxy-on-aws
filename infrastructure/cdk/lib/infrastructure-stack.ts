@@ -48,7 +48,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     this.databaseCluster = new rds.ServerlessCluster(this, 'databaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_14_6,
+        version: rds.AuroraPostgresEngineVersion.VER_13_9,
       }),
       vpc: props.eksCluster.vpc,
       credentials: {
