@@ -48,7 +48,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     this.databaseCluster = new rds.ServerlessCluster(this, 'databaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_11_16,
+        version: rds.AuroraPostgresEngineVersion.VER_13_9,
       }),
       vpc: props.eksCluster.vpc,
       credentials: {
@@ -56,6 +56,7 @@ export class InfrastructureStack extends cdk.Stack {
       },
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
+      backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.backupRetentionInDays')),
     });
 
     /////////////////////////////
