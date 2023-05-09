@@ -55,6 +55,11 @@ export class InfrastructureStack extends cdk.Stack {
       credentials: {
         username: 'galaxydbuser',
       },
+      scaling: {
+        minCapacity: this.node.tryGetContext('rds.minCapacity'),
+        maxCapacity: this.node.tryGetContext('rds.maxCapacity'),
+        autoPause: cdk.Duration.minutes(this.node.tryGetContext('rds.autoPause')),
+      },
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
       backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.snapshotRetentionInDays')),
