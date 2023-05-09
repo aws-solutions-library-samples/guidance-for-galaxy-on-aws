@@ -12,10 +12,6 @@ const region = process.env.CDK_DEFAULT_REGION;
 
 app.node.setContext("galaxy.adminEmails", 'yegor@amazon.com,mapk@amazon.de,mibosch@amazon.de');
 
-// needs to stay here until PR is merged and released:
-// https://github.com/aws-quickstart/cdk-eks-blueprints/pull/654
-app.node.setContext("eks.default.instance-type", ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE4));
-
 const providerStack = new ProviderStack(app, 'Provider', {env: { account, region }});
 
 const galaxyInfraStack = new InfrastructureStack(app, 'GlxInfra', {

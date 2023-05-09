@@ -20,6 +20,7 @@
     "galaxy.namespace": "galaxy",
     "galaxy.adminEmails": "",
     "galaxy.refdataEnabled": true,
+    "galaxy.backupsEnabled": true,
 
     "rabbitmq.cluster": false,
     "rabbitmq.instance": "mq.t3.micro",
@@ -27,8 +28,9 @@
     "eks.default.min-size": 1,
     "eks.default.max-size": 5,
     "eks.default.desired-size": 3,
+    "eks.default.instance-type": "m5.4xlarge",
 
-    "rds.backupRetentionInDays": 1,
+    "rds.snapshotRetentionInDays": 1,
 
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,

@@ -5,6 +5,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as efs from 'aws-cdk-lib/aws-efs';
+import * as backup from 'aws-cdk-lib/aws-backup';
 import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
@@ -56,7 +57,7 @@ export class InfrastructureStack extends cdk.Stack {
       },
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
-      backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.backupRetentionInDays')),
+      backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.snapshotRetentionInDays')),
     });
 
     /////////////////////////////
@@ -101,6 +102,23 @@ export class InfrastructureStack extends cdk.Stack {
       exportName: 'rabbitmqEndpoint',
       value: cdk.Fn.select(1, cdk.Fn.split('//', cdk.Fn.select(1, cdk.Fn.split(':', cdk.Fn.select(0, this.rabbitmqCluster.attrAmqpEndpoints))))),
     });
+
+    /////////////////////////////
+    // # BACKUPS
+    /////////////////////////////
+
+    const backupsEnabled: boolean = this.node.tryGetContext('galaxy.backupsEnabled');
+
+    if (backupsEnabled) {
+      const plan = backup.BackupPlan.dailyMonthly1YearRetention(this, 'GalaxyBackups');
+
+      plan.addSelection('GalaxyInfraSelection', {
+        resources: [
+          backup.BackupResource.fromEfsFileSystem(this.fileSystem),
+          backup.BackupResource.fromRdsServerlessCluster(this.databaseCluster),
+        ]
+      })
+    }
   }
 }
 
