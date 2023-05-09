@@ -30,6 +30,9 @@
     "eks.default.desired-size": 3,
     "eks.default.instance-type": "m5.4xlarge",
 
+    "rds.minCapacity": 2,
+    "rds.maxCapacity": 16,
+    "rds.autoPause": 5,
     "rds.snapshotRetentionInDays": 1,
 
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
