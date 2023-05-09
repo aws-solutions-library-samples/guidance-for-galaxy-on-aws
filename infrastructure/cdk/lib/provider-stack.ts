@@ -44,12 +44,13 @@ export class ProviderStack extends cdk.Stack {
         new blueprints.addons.AwsForFluentBitAddOn({
           iamPolicies: [
             new iam.PolicyStatement({
-              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:DescribeLogStreams', 'logs:PutLogEvents'],
               resources: ['arn:aws:logs:*:*:*']
             })
           ],
           values: {
             cloudWatch: {
+              region: cdk.Stack.of(this).region,
               enabled: true
             }
           }
