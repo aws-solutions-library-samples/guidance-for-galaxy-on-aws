@@ -21,6 +21,7 @@
     "galaxy.adminEmails": "",
     "galaxy.refdataEnabled": true,
     "galaxy.backupsEnabled": true,
+    "galaxy.logLevel": "WARNING",
 
     "rabbitmq.cluster": false,
     "rabbitmq.instance": "mq.t3.micro",
