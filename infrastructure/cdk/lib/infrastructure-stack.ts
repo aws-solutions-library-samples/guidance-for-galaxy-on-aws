@@ -35,6 +35,7 @@ export class InfrastructureStack extends cdk.Stack {
     this.fileSystem = new efs.FileSystem(this, 'fileSystem', {
       vpc: props.eksCluster.vpc,
       securityGroup: fileSystemSecurityGroup,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     /////////////////////////////
@@ -62,6 +63,7 @@ export class InfrastructureStack extends cdk.Stack {
       },
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.snapshotRetentionInDays')),
     });
 
