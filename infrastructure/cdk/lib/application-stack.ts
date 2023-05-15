@@ -209,6 +209,7 @@ export class ApplicationStack extends cdk.Stack {
               admin_users: this.node.tryGetContext("galaxy.adminEmails"),
               require_login: true,
               show_welcome_with_login: true,
+              log_level: this.node.tryGetContext("galaxy.logLevel")
             },
           },
         },
