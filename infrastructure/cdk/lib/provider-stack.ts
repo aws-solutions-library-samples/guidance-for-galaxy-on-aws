@@ -69,6 +69,4 @@ export class ProviderStack extends cdk.Stack {
       const eksClusterStack = eksClusterBuilder.build(this, 'EKS');
 
       this.eksCluster = eksClusterStack.getClusterInfo().cluster
-    }
-  }
 }
