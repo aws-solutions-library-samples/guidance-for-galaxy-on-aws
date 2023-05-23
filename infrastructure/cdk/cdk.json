@@ -36,6 +36,8 @@
     "rds.autoPause": 5,
     "rds.snapshotRetentionInDays": 1,
 
+    "cloudwatch.logRetentionDays": 30,
+
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
