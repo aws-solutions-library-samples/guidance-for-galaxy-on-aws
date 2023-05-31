@@ -163,7 +163,8 @@ With the configuration file ready, you can complete Active Directory integration
 
 ## Cleanup
 
-**Warning:** Instructions in this section delete both the Amazon EFS file system and the Amazon RDS Aurora database. Make sure you don't need the data stored there and have backups of the data.
+> **Warning**
+> Instructions in this section delete both the Amazon EFS file system and the Amazon RDS Aurora database. Make sure you don't need the data stored there and have backups of the data.
 
 Run the following command to destroy the CDK application and all infrastructure components used by Galaxy:
 
