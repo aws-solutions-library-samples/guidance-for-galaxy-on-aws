@@ -44,12 +44,19 @@ export class ProviderStack extends cdk.Stack {
         new blueprints.addons.AwsForFluentBitAddOn({
           iamPolicies: [
             new iam.PolicyStatement({
-              actions: ['logs:CreateLogGroup', 
+              actions: ['logs:CreateLogGroup',
                 'logs:CreateLogStream',
                 'logs:DescribeLogStreams',
                 'logs:PutLogEvents',
                 'logs:PutRetentionPolicy'],
-              resources: ['arn:aws:logs:*:*:*']
+              resources: [
+                cdk.Stack.of(this).formatArn({
+                  service: 'logs',
+                  resource: 'log-group',
+                  resourceName: '/aws/eks/fluentbit-cloudwatch/*',
+                  arnFormat: cdk.ArnFormat.COLON_RESOURCE_NAME,
+                }),
+              ],
             })
           ],
           values: {
@@ -75,4 +82,5 @@ export class ProviderStack extends cdk.Stack {
 
       this.eksCluster = eksClusterStack.getClusterInfo().cluster
     }
+  }
 }
