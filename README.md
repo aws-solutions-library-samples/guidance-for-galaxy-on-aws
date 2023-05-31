@@ -103,7 +103,7 @@ The EKS Blueprints used in this solution come with the Cluster Autoscaler add-on
 To enable horizontal scaling on the pod level, use the `kubectl` tool to set autoscaling configuration and targets:
 
 ```bash
-kubectl autoscale deployment galaxy-web —cpu-percednt=50 —min=1 —max=10
+kubectl autoscale deployment galaxy-web --cpu-percent=50 --min=1 --max=10
 ```
 
 This command will enable autoscaling when pod CPU usage is higher than 50%, with a maximum of 10 pods and a minimum of 1 pod. It is recommended to apply horizontal pod scaling to the `galaxy-web`, `galaxy-workflow`, and `galaxy-job` services in the cluster.
@@ -151,14 +151,13 @@ Galaxy supports various [authentication mechanisms](https://docs.galaxyproject.o
 Explanation of the key configuration parameters:
 
 - `server`: Connect to the domain controllers on `domaincontrollers.example.com`. To increase the resilience of this deployment, it is best practice to point to a DNS record rather than the Active Directory endpoint directly, to avoid the Domain Controller becoming a potential single point of failure.
-- `allow-register/allow-password-change` Disables Galaxy's native user management
-- `search-base`: Allows users matching `ou=users,ou=department,dc=example,dc=com` to log in
+- `allow-register/allow-password-change` Disables Galaxy's native user management.
+- `search-base`: Allows users matching `ou=users,ou=department,dc=example,dc=com` to log in.
 - `search-user`/`search-password`: Leverages the user `queryrole`, given by `cn=queryrole,ou=users,ou=department,dc=example,dc=com` to query Active Directory. The `searchUser` is a service account that should be configured with the minimum levels of permissions to perform AD queries.
 
 With the configuration file ready, you can complete Active Directory integration by following the next steps:
 
-- As the current version of the Galaxy Helm chart does not include the needed python library[ldap3](https://ldap3.readthedocs.io/en/latest/), install it manually before the web server starts by using the `galaxy.additionalSetupCommands` context variable:
-  `"galaxy.additionalSetupCommands": "/galaxy/server/.venv/bin/pip3 install ldap3"`
+- As the current version of the Galaxy Helm chart does not include the needed python library[ldap3](https://ldap3.readthedocs.io/en/latest/), install it manually before the web server starts by using the `additionalSetupCommands` context variable: `"galaxy.additionalSetupCommands": "/galaxy/server/.venv/bin/pip3 install ldap3"`.
 - LDAP 3 requires Active Directory to support [StartTLS](https://datatracker.ietf.org/doc/html/rfc2830) to upgrade LDAP to LDAPS. AWS Managed Microsoft AD StartTLS can be configured by following the steps in the [documentation](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_ldap_server_side.html).
 - Make sure Galaxy servers can establish a TCP connection to the Active Directory Domain Controllers on port 389 for LDAP and port 636 for LDAPS. This solution configures the Security Groups and Network Access Control Lists to permit those connections, but additional configuration, like [configuring routing tables](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html), may be needed if the Domain Controllers are in a different VPC/Network.
 
