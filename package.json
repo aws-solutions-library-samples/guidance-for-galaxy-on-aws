@@ -1,7 +1,7 @@
 {
-  "name": "galaxy",
-  "version": "0.1.0",
-  "license": "Apache-2.0",
+  "name": "guidance-for-galaxy-on-aws",
+  "version": "1.0",
+  "license": "MIT-0",
   "bin": {
     "galaxy": "bin/galaxy.js"
   },
