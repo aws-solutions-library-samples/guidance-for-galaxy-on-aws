@@ -1,4 +1,5 @@
 import 'source-map-support/register';
+import fs = require("fs");
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as eks from 'aws-cdk-lib/aws-eks';
@@ -6,6 +7,21 @@ import * as efs from 'aws-cdk-lib/aws-efs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+
+function loadConfigs() {
+  const configsPath = __dirname + "/../configs/";
+  const files = fs.readdirSync(configsPath).filter((elm) =>
+    [".xml", ".conf", ".yml"].some((s) => elm.endsWith(s))
+  );
+
+  const configFiles: Record<string, string> = {};
+
+  files.forEach((filename) => {
+    configFiles[filename] = fs.readFileSync(configsPath + filename).toString();
+  });
+
+  return configFiles;
+}
 
 export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
@@ -179,7 +195,6 @@ export class ApplicationStack extends cdk.Stack {
     });
 
     galaxyEKSSecretRabbitmq.node.addDependency(galaxyEKSNamespace, galaxyEKSSecretStore);
-
     const s3csiValues = {
       deploy: false, // deployed outside of Galaxy Helm
       storageClass: {
@@ -212,7 +227,10 @@ export class ApplicationStack extends cdk.Stack {
               log_level: this.node.tryGetContext("galaxy.logLevel")
             },
           },
+          ...loadConfigs(),
         },
+        // Needed as Helm currently does not check and install dependencies 
+        extraInitCommands: this.node.tryGetContext("galaxy.additionalSetupCommands"),
         extraFileMappings: {
           "/galaxy/server/static/welcome.html": {
             content: `      
@@ -357,4 +375,3 @@ export class ApplicationStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'galaxyDNSOutput', { value: galaxyDNS.value });
   }
 }
-
