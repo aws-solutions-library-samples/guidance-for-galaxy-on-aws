@@ -29,7 +29,7 @@ export class ProviderStack extends cdk.Stack {
         clusterSecurityGroupId: existingSecurityGroupId,
         vpc: ec2.Vpc.fromLookup(this, 'Vpc', {
           vpcId: existingVpcId,
-        }),
+        })
       });
     } else {
       const addOns: Array<blueprints.ClusterAddOn> = [
@@ -69,10 +69,19 @@ export class ProviderStack extends cdk.Stack {
         })
       ];
 
+      const controlPlaneLogs = [ blueprints.ControlPlaneLogType.API,
+        blueprints.ControlPlaneLogType.AUDIT,
+        blueprints.ControlPlaneLogType.AUTHENTICATOR,
+        blueprints.ControlPlaneLogType.CONTROLLER_MANAGER,
+        blueprints.ControlPlaneLogType.SCHEDULER]
+
+      blueprints.ControlPlaneLogType.API
       const eksClusterBuilder = blueprints.EksBlueprint.builder()
         .account(cdk.Stack.of(this).account)
         .region(cdk.Stack.of(this).region)
-        .addOns(...addOns);
+        .addOns(...addOns)
+        .enableControlPlaneLogTypes(...controlPlaneLogs)
+        ;
 
       if (existingVpcId) {
         eksClusterBuilder.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(existingVpcId));
