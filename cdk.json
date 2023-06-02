@@ -30,6 +30,7 @@
     "eks.default.max-size": 5,
     "eks.default.desired-size": 3,
     "eks.default.instance-type": "m5.4xlarge",
+    "eks.default.private-cluster": true,
 
     "rds.minCapacity": 2,
     "rds.maxCapacity": 16,
