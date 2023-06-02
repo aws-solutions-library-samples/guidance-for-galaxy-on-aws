@@ -75,7 +75,6 @@ export class ProviderStack extends cdk.Stack {
         blueprints.ControlPlaneLogType.CONTROLLER_MANAGER,
         blueprints.ControlPlaneLogType.SCHEDULER]
 
-      blueprints.ControlPlaneLogType.API
       const eksClusterBuilder = blueprints.EksBlueprint.builder()
         .account(cdk.Stack.of(this).account)
         .region(cdk.Stack.of(this).region)
