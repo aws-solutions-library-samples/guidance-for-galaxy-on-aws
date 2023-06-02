@@ -29,7 +29,7 @@ export class ProviderStack extends cdk.Stack {
         clusterSecurityGroupId: existingSecurityGroupId,
         vpc: ec2.Vpc.fromLookup(this, 'Vpc', {
           vpcId: existingVpcId,
-        })
+        }),
       });
     } else {
       const addOns: Array<blueprints.ClusterAddOn> = [
