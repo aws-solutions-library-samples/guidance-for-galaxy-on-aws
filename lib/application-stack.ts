@@ -303,7 +303,7 @@ export class ApplicationStack extends cdk.Stack {
           annotations: {
             "alb\.ingress\.kubernetes\.io/target-type": "ip",
             "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-            "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
+            "alb\.ingress\.kubernetes\.io/scheme": "internal",
             "alb\.ingress\.kubernetes\.io/group\.order": "99",
             ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn'))
           },
@@ -317,7 +317,7 @@ export class ApplicationStack extends cdk.Stack {
             annotations: {
               "alb\.ingress\.kubernetes\.io/target-type": "ip",
               "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-              "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
+              "alb\.ingress\.kubernetes\.io/scheme": "internal",
               ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn'))
             },
           },
