@@ -100,7 +100,8 @@ export class ProviderStack extends cdk.Stack {
             subnets: {
               onePerAz: true,
               subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
-            }
+            },
+            open: true
           }
         )
       }
