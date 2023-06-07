@@ -24,7 +24,13 @@ function loadConfigs() {
 }
 
 function addCertificateToLoadbalancer(arn: String){
-  return arn? {"alb\.ingress\.kubernetes\.io/certificate-arn": arn} : {};
+  return arn? 
+    {"alb\.ingress\.kubernetes\.io/certificate-arn": arn}: {};
+}
+
+function addS3bucketToLogLoadBalancerLogs(bucketname: String, prefix: String){
+  return bucketname?
+    {"alb\.ingress\.kubernetes\.io/load-balancer-attributes": `access_logs.s3.enabled=true,access_logs.s3.bucket=${bucketname},access_logs.s3.prefix=${prefix}`}: {};
 }
 
 export interface ApplicationStackProps extends cdk.StackProps {
@@ -303,9 +309,10 @@ export class ApplicationStack extends cdk.Stack {
           annotations: {
             "alb\.ingress\.kubernetes\.io/target-type": "ip",
             "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-            "alb\.ingress\.kubernetes\.io/scheme": "internal",
+            "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
             "alb\.ingress\.kubernetes\.io/group\.order": "99",
-            ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn'))
+            ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn')),
+            ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.loadbalancerAccessLogsBucketname'), 'galaxy'),
           },
           canary: {
             enabled: false,
@@ -317,8 +324,9 @@ export class ApplicationStack extends cdk.Stack {
             annotations: {
               "alb\.ingress\.kubernetes\.io/target-type": "ip",
               "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-              "alb\.ingress\.kubernetes\.io/scheme": "internal",
-              ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn'))
+              "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
+              ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.loadBalancerCertArn')),
+              ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.loadbalancerAccessLogsBucketname'), 'tusd'),
             },
           },
         },
