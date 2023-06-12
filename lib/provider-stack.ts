@@ -94,7 +94,8 @@ export class ProviderStack extends cdk.Stack {
       const vpc = this.eksCluster.vpc;
 
       if (!existingVpcId){
-        vpc.addFlowLog('eks-vpc-flowlog');
+        if (this.node.tryGetContext('vpc.enableFlowlogs'))
+          vpc.addFlowLog('eks-vpc-flowlog');
         vpc.addInterfaceEndpoint('eks-vpc-endpoint', {
             service: ec2.InterfaceVpcEndpointAwsService.EKS,
             subnets: {
