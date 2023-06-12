@@ -63,6 +63,7 @@ export class InfrastructureStack extends cdk.Stack {
       },
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
+      deletionProtection: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       backupRetention: cdk.Duration.days(this.node.tryGetContext('rds.snapshotRetentionInDays')),
     });

@@ -69,10 +69,19 @@ export class ProviderStack extends cdk.Stack {
         })
       ];
 
+      const controlPlaneLogs = [blueprints.ControlPlaneLogType.API,
+      blueprints.ControlPlaneLogType.AUDIT,
+      blueprints.ControlPlaneLogType.AUTHENTICATOR,
+      blueprints.ControlPlaneLogType.CONTROLLER_MANAGER,
+      blueprints.ControlPlaneLogType.SCHEDULER]
+
       const eksClusterBuilder = blueprints.EksBlueprint.builder()
         .account(cdk.Stack.of(this).account)
         .region(cdk.Stack.of(this).region)
-        .addOns(...addOns);
+        .addOns(...addOns)
+        .enableControlPlaneLogTypes(...controlPlaneLogs)
+        .version(eks.KubernetesVersion.V1_25)
+        ;
 
       if (existingVpcId) {
         eksClusterBuilder.resourceProvider(blueprints.GlobalResources.Vpc, new blueprints.VpcProvider(existingVpcId));
@@ -81,6 +90,22 @@ export class ProviderStack extends cdk.Stack {
       const eksClusterStack = eksClusterBuilder.build(this, 'EKS');
 
       this.eksCluster = eksClusterStack.getClusterInfo().cluster
+
+      const vpc = this.eksCluster.vpc;
+
+      if (!existingVpcId) {
+        if (this.node.tryGetContext('vpc.enableFlowlogs')) {
+          vpc.addFlowLog('eks-vpc-flowlog');
+        }
+        vpc.addInterfaceEndpoint('eks-vpc-endpoint', {
+          service: ec2.InterfaceVpcEndpointAwsService.EKS,
+          subnets: {
+            onePerAz: true,
+            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+          },
+          open: true
+        });
+      }
     }
   }
 }

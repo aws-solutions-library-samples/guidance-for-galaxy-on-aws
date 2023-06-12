@@ -23,6 +23,16 @@ function loadConfigs() {
   return configFiles;
 }
 
+function addCertificateToLoadbalancer(arn: String) {
+  return arn ?
+    { "alb\.ingress\.kubernetes\.io/certificate-arn": arn } : {};
+}
+
+function addS3bucketToLogLoadBalancerLogs(bucketname: String, prefix: String) {
+  return bucketname ?
+    { "alb\.ingress\.kubernetes\.io/load-balancer-attributes": `access_logs.s3.enabled=true,access_logs.s3.bucket=${bucketname},access_logs.s3.prefix=${prefix}` } : {};
+}
+
 export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
   databaseCluster: rds.ServerlessCluster;
@@ -301,6 +311,8 @@ export class ApplicationStack extends cdk.Stack {
             "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
             "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
             "alb\.ingress\.kubernetes\.io/group\.order": "99",
+            ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.elbCertArn')),
+            ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.elbAccessLogsBucketname'), 'galaxy'),
           },
           canary: {
             enabled: false,
@@ -313,6 +325,8 @@ export class ApplicationStack extends cdk.Stack {
               "alb\.ingress\.kubernetes\.io/target-type": "ip",
               "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
               "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
+              ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.elbCertArn')),
+              ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.elbAccessLogsBucketname'), 'tusd'),
             },
           },
         },
