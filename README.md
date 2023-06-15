@@ -31,6 +31,7 @@ After cloning this repository, you can deploy the solution using CDK deploy comm
 ```bash
 git clone https://github.com/aws-solutions-library-samples/guidance-for-galaxy-on-aws
 cd guidance-for-galaxy-on-aws
+npm install
 cdk deploy --all
 ```
 
