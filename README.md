@@ -18,10 +18,9 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 - [Create an AWS account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html) if you do not already have one and log in. The IAM user that you use must have sufficient permissions to make necessary AWS service calls and manage AWS resources.
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured
-- [Git Installed](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed
 - [Node and NPM](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 14 installed
-- [AWS Cloud Developer Kit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed and configured
-- [Docker](https://www.docker.com/)
+- [AWS Cloud Developer Kit v2](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed and configured
 - [Python3](https://www.python.org/downloads/) >= 3.8
 
 ## Deployment
