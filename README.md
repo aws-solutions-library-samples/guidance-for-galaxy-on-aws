@@ -36,6 +36,11 @@ cdk deploy --all
 
 By default, this CDK application creates a new VPC optimized for Amazon Elastic Kubernetes (EKS), a new EKS cluster using [EKS Blueprints](https://github.com/aws-quickstart/cdk-eks-blueprints), the Galaxy-specific AWS infrastructure and Galaxy application itself. It is also possible to use an existing VPC and EKS cluster in your account. To re-use an existing VPC, you will need to provide a VPC Id to CDK context under `vpc.id` key. To re-use an existing EKS cluster, you will need to provide a EKS cluster name, Security Group Id and IAM Role ARN for Kubectl tool in CDK context under `eks.clusterName`, `eks.securityGroupId` and `eks.kubectlRoleArn` keys. Refer to Configuration section for more details.
 
+### Potential issues
+On June 1, 2023, AWS will be adding an additional layer of security to ELB ‘Create*' API calls where API callers must have explicit access to add tags in their Identity and Access Management (IAM) policy. Currently, access to attach tags was implicitly granted with access to 'Create*' APIs.
+
+Due to this change, the Elastic Load Balancer cannot be created with the configured permissions. As current workaround, identify the role used for this creation (named by default  `ProviderEKSFXXXXX-EKSawsloadbalancercontrollerRo-XXXXXXX`, where the values of `XXXX` might vary). Append after line 129 a new line containing `,"elasticloadbalancing:AddTags"` to establish the required authentication.
+
 #### Production deployment and GitOps
 
 In case your team operates an existing cluster with multiple applications or if your organization has a dedicated team who is going to centrally operate a Kubernetes cluster, it might be beneficial to set up separate CI/CD pipelines for EKS infrastructure and the Galaxy application. Please follow the application deployment instructions for [EKS Blueprints using ArgoCD](https://aws-quickstart.github.io/cdk-eks-blueprints/getting-started/#deploy-workloads-with-argocd) and the [Production Environment](https://docs.galaxyproject.org/en/latest/admin/production.html) section of the Galaxy documentation.
@@ -167,7 +172,7 @@ With the configuration file ready, you can complete Active Directory integration
 ## Cleanup
 
 > **Warning**
-> Instructions in this section delete both the Amazon EFS file system and the Amazon RDS Aurora database. Make sure you don't need the data stored there and have backups of the data.
+> Instructions in this section delete both the Amazon EFS file system and the Amazon RDS Aurora database. The database is configured by default to be protected from deleting. Make sure you don't need the data stored there and have backups of the data. Disable this deletion protection for the Amazon RDS Aurora database in this case.
 
 Run the following command to destroy the CDK application and all infrastructure components used by Galaxy:
 
@@ -176,6 +181,8 @@ cdk destroy --all
 ```
 
 This command will delete VPC, EKS Cluster, Galaxy application, and other infrastructure dependencies. If the CloudFormation stack is stuck in DELETE FAILED for more than 1 hour, make sure RDS, EFS and ELB with its target groups are deleted. You might need to remove those resources manually in AWS Console or AWS CLI.
+
+If you enabled backups or reference data, there might be data stored in [AWS Backup](https://console.aws.amazon.com/backup/home/) or [Amazon Simple Storage Service](https://s3.console.aws.amazon.com/s3/home) and continue to produce costs. 
 
 ## Security
 
