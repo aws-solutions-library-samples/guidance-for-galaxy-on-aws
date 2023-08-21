@@ -95,7 +95,7 @@ export class InfrastructureStack extends cdk.Stack {
       brokerName: 'rabbitmq' + cdk.Aws.STACK_NAME,
       deploymentMode: rabbitMQAsCluster ? 'CLUSTER_MULTI_AZ' : 'SINGLE_INSTANCE',
       engineType: 'RABBITMQ',
-      engineVersion: '3.10.10',
+      engineVersion: '3.11.16',
       hostInstanceType: rabbitMQInstanceSize,
       publiclyAccessible: false,
       users: [{
