@@ -11,8 +11,6 @@ const app = new cdk.App();
 const account = process.env.CDK_DEFAULT_ACCOUNT;
 const region = process.env.CDK_DEFAULT_REGION;
 
-app.node.setContext("galaxy.adminEmails", 'yegor@amazon.com,mapk@amazon.de,mibosch@amazon.de');
-
 const providerStack = new ProviderStack(app, 'Provider', {env: { account, region }});
 
 const galaxyInfraStack = new InfrastructureStack(app, 'GlxInfra', {
