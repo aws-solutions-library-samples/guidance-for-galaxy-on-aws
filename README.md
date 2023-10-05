@@ -21,7 +21,6 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed
 - [Node and NPM](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) >= 14 installed
 - [AWS Cloud Development Kit v2](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) installed and configured
-- [Python3](https://www.python.org/downloads/) >= 3.8
 
 ## Deployment
 
