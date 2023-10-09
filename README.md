@@ -176,7 +176,7 @@ cdk destroy --all
 
 This command will delete VPC, EKS Cluster, Galaxy application, and other infrastructure dependencies. If the CloudFormation stack is stuck in DELETE FAILED for more than 1 hour, make sure RDS, EFS and ELB with its target groups are deleted. You might need to remove those resources manually in AWS Console or AWS CLI.
 
-If you enabled backups or reference data, there might be data stored in [AWS Backup](https://console.aws.amazon.com/backup/home/) or [Amazon Simple Storage Service](https://s3.console.aws.amazon.com/s3/home) and continue to produce costs. 
+If you enabled backups or reference data, there might be data stored in [AWS Backup](https://console.aws.amazon.com/backup/home/) or [Amazon Simple Storage Service](https://s3.console.aws.amazon.com/s3/home) and continue to produce costs.
 
 ## Security
 
