@@ -1,7 +1,5 @@
 # Guidance for Galaxy on AWS
 
-### Required
-
 1. [Overview](#overview)
     - [Cost](#cost)
 2. [Prerequisites](#prerequisites)
@@ -21,7 +19,7 @@
 
 ## Overview
 
-This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS and leverage security, reliability and availability of compute resources in the cloud. Galaxy is a data analysis platform focusing on accessibility, reproducibility, and transparency of primarily bioinformatics data. The solution is based on Amazon Elastic Kubernetes Service (EKS), Amazon Aurora PostgreSQL Serverless, Amazon MQ, Amazon Elastic File System (EFS), as well as supporting services like Amazon CloudWatch, AWS Backups, AWS Secrets Manager and AWS CDK.
+This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS and leverage security, reliability and availability of compute resources in the cloud. Galaxy is a data analysis platform focusing on accessibility, reproducibility, and transparency of primarily bioinformatics data.
 
 ![Architecture diagram of the guidance for Galaxy on AWS](/assets/architecture.png)
 
@@ -35,7 +33,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $1600 per month for running and processing data on the initially provisioned two instances. Cost might increase with higher workload, as by default, up to five instances are provisioned.
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $2200 per month for running and processing data on the initially provisioned three `m5.4xlarge` instances, providing 48 vCPUs and 192 GiB Memory in total. Both the number of instances and the type can be modified, as described in [Next Steps](#infrastructure-configuration).
 
 
 ## Prerequisites
