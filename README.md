@@ -10,13 +10,13 @@
     - [Bootstrap AWS CDK](#bootstrap-aws-cdk)
     - [Supported Regions](#supported-regions)
 3. [Deployment Steps](#deployment-steps)
-4. [Deployment Validation](#deployment-validation-required)
-5. [Running the Guidance](#running-the-guidance-required)
+4. [Deployment Validation](#deployment-validation)
+5. [Running the Guidance](#running-the-guidance)
    - [Production deployment and GitOps](#production-deployment-and-gitops)
-6. [Next Steps](#next-steps-required)
+6. [Next Steps](#next-steps)
    - [Infrastrcture configuration](#infrastructure-configuration)
    - [Application configuration](#application-configuration)
-7. [Cleanup](#cleanup-required)
+7. [Cleanup](#cleanup)
 8. [Notices](#notices)
 
 ## Overview
@@ -63,7 +63,7 @@ This Guidance uses various AWS Services, cf. [Overview](#overview), and those ne
 1. Clone the repository using the command ```git clone https://github.com/aws-solutions-library-samples/guidance-for-galaxy-on-aws```
 2. Change Directory to the cloned repository using ```cd guidance-for-galaxy-on-aws```
 3. Install packages in requirements using command ```npm install```
-4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, c.f. [Configuration](#configuration)
+4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, cf. [Configuration](#configuration)
 5. Run this command to deploy the guidance ```cdk deploy --all```. `cdk` might prompt you about changes in your account. The changes need to be accepted for the deployment to work.
 6. Capture the DNS name of the load balancer ```aws cloudformation describe-stacks --stack-name "GlxApp" --query "Stacks[0].Outputs[0].OutputValue" --output text```
 
