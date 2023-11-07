@@ -31,7 +31,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 ### Cost
 
-_You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $1600 per month for running and processing data on the initially provisioned two instances. Cost might increase with higher workload, as by default up to five instances are provisioned.
+ou are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $1600 per month for running and processing data on the initially provisioned two instances. Cost might increase with higher workload, as by default, up to five instances are provisioned.
 
 
 ## Prerequisites
@@ -52,14 +52,14 @@ This guidance can be deployed with Windows, Mac and Linux, both with x86_64 and 
 This Guidance uses aws-cdk. If you are using aws-cdk for first time, please perform the bootstrapping for all accounts and regions you will deploy this guidance: [CDK Bootstrapping](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html)
 
 ### Supported Regions
-This Guidance uses various AWS Services, cf. (#overview), and those need to be available in your region. You can check here whether these services are available in the region: [Supported Services](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/).
+This Guidance uses various AWS Services, cf. [Overview](#overview), and those need to be available in your region. You can check here whether these services are available in the region: [Supported Services](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/).
 
 ## Deployment Steps
 
 1. Clone the repository using the command ```git clone https://github.com/aws-solutions-library-samples/guidance-for-galaxy-on-aws```
 2. Change Directory to the cloned repository using ```cd guidance-for-galaxy-on-aws```
 3. Install packages in requirements using command ```npm install```
-4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, c.f. (#configuration)
+4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, c.f. [Configuration](#configuration)
 5. Run this command to deploy the guidance ```cdk deploy --all```. `cdk` might prompt you about changes in your account. The changes need to be accepted for the deployment to work.
 6. Capture the DNS name of the load balancer ```aws cloudformation describe-stacks --stack-name "GlxApp" --query "Stacks[0].Outputs[0].OutputValue" --output text```
 
