@@ -31,7 +31,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 ### Cost
 
-ou are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $1600 per month for running and processing data on the initially provisioned two instances. Cost might increase with higher workload, as by default, up to five instances are provisioned.
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $1600 per month for running and processing data on the initially provisioned two instances. Cost might increase with higher workload, as by default, up to five instances are provisioned.
 
 
 ## Prerequisites
@@ -68,10 +68,11 @@ By default, this CDK application creates a new VPC optimized for Amazon Elastic 
 ## Deployment Validation
 
 Entering the captured DNS address in a web browser will open your Galaxy web server. By default the load balancer listens for HTTP on port 80.
+If an SSL certificate is provided, the load balancer will listen for HTTPS on port 443.
 
 ## Running the Guidance
 
-The deployment creates a role with a name of the form ProviderEKS _XXXXXXXX_-EKSAccessRole _XXXXXXXX_-_XXXXXXXXXXXXX_.
+The deployment creates a role with a name of the form _ProviderEKSXXXXXXXX-EKSAccessRoleXXXXXXXX-XXXXXXXXXXXXX_.
 Only this role has access to the created EKS cluster and by default everyone in this account can assume the role to interact with the EKS cluster.
 Additionally, the CloudFormation Stack _ProviderEKSXXXXXXXX_ provides two commands, _EKSConfigCommandXXXXXXXX_ and _EKSConfigCommandXXXXXXXX_, which provide `kubectl` configuration and access to interact with the cluster.
 The outputs of this stack can be viewed, for example, via the AWS Management console and navigating to CloudFormation and the relevant stack.
@@ -142,7 +143,7 @@ In the default configuration, this solution will deploy Galaxy behind a publicly
 
 ##### Autoscaling
 
-The EKS Blueprints used in this solution come with the Cluster Autoscaler add-on, which automatically adjusts the number of EC2 nodes in your cluster when pods fail due to insufficient resources (not enough EC2 instances in the cluster) or when pods are rescheduled onto other nodes due to being in nodes that are underutilized for an extended period of time (too many EC2 instances in the cluster).
+The Guidance allows for both horiztonal as well as vertical scaling. The EKS Blueprints used in this solution come with the Cluster Autoscaler add-on, which automatically adjusts the number of EC2 nodes in your cluster when pods fail due to insufficient resources (not enough EC2 instances in the cluster) or when pods are rescheduled onto other nodes due to being in nodes that are underutilized for an extended period of time (too many EC2 instances in the cluster).
 
 To enable horizontal scaling on the pod level, use the `kubectl` tool to set autoscaling configuration and targets:
 
