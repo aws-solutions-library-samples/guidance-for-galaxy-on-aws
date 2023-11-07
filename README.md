@@ -12,8 +12,12 @@
 3. [Deployment Steps](#deployment-steps)
 4. [Deployment Validation](#deployment-validation-required)
 5. [Running the Guidance](#running-the-guidance-required)
+   - [Production deployment and GitOps](#production-deployment-and-gitops)
 6. [Next Steps](#next-steps-required)
+   - [Infrastrcture configuration](#infrastructure-configuration)
+   - [Application configuration](#application-configuration)
 7. [Cleanup](#cleanup-required)
+8. [Notices](#notices)
 
 ## Overview
 
