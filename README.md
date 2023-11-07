@@ -33,7 +33,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $2200 per month for running and processing data on the initially provisioned three `m5.4xlarge` instances, providing 48 vCPUs and 192 GiB Memory in total. Both the number of instances and the type can be modified, as described in [Next Steps](#infrastructure-configuration).
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $2200 per month. The main cost drivers are the the initially provisioned three `m5.4xlarge` instances for about $1700 per month, providing 48 vCPUs and 192 GiB Memory in total. Both the number of instances and the type can be modified, as described in [Next Steps](#infrastructure-configuration).
 
 
 ## Prerequisites
