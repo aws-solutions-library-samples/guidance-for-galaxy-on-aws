@@ -30,7 +30,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 - [Amazon Elastic Kubernetes Service (EKS)](https://aws.amazon.com/eks/) is a managed service that makes it easy for you to run Kubernetes on AWS without installing and operating your own Kubernetes control plane or worker nodes. This solution is based on EKS Blueprints, a framework to create fully bootstrapped EKS clusters based on [AWS CDK](https://aws.amazon.com/cdk/). Amazon EC2 [Elastic Load Balancing](https://aws.amazon.com/elasticloadbalancing/) (ELB) automatically distributes incoming application traffic across EC2 nodes in EKS Cluster in one or more Availability Zones (AZs).
 - [Amazon Elastic File System (EFS)](https://aws.amazon.com/efs/) is a simple, serverless, set-and-forget elastic file system that lets you share file data without provisioning or managing storage. It's built to scale to petabytes on demand without disrupting applications. We use EFS for Galaxy tools storage and user datasets.
 - [Amazon Aurora](https://aws.amazon.com/rds/aurora/) is designed for unparalleled high performance and availability at global scale with full MySQL and PostgreSQL compatibility. Amazon Aurora Serverless is used as a Galaxy database and provides built-in security, continuous backups, serverless compute.
-- [Amazon MQ](https://aws.amazon.com/amazon-mq/) is a managed message broker service for [Apache ActiveMQ](http://activemq.apache.org/components/classic/) and [RabbitMQ](https://www.rabbitmq.com/) that makes it easy to set up and operate message brokers in the cloud. Galaxy uses Amazon MQ and RabbitMQ broker to schedule and monitor execution jobs.
+- [Amazon MQ](https://aws.amazon.com/amazon-mq/) is a managed mess ge broker service for [Apache ActiveMQ](http://activemq.apache.org/components/classic/) and [RabbitMQ](https://www.rabbitmq.com/) that makes it easy to set up and operate message brokers in the cloud. Galaxy uses Amazon MQ and RabbitMQ broker to schedule and monitor execution jobs.
 - [Amazon Simple Storage Service (S3)](https://aws.amazon.com/s3/) is object storage built to store and retrieve any amount of data from anywhere. S3 is a simple storage service that offers industry leading durability, availability, performance, security, and virtually unlimited scalability at very low costs. Galaxy uses Amazon S3 to store reference data.
 
 ### Cost
@@ -63,7 +63,7 @@ This Guidance uses various AWS Services, cf. [Overview](#overview), and those ne
 1. Clone the repository using the command ```git clone https://github.com/aws-solutions-library-samples/guidance-for-galaxy-on-aws```
 2. Change Directory to the cloned repository using ```cd guidance-for-galaxy-on-aws```
 3. Install packages in requirements using command ```npm install```
-4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, cf. [Configuration](#configuration)
+4. [Optionally] Edit the content of ```cdk.json``` to modify parameter to fit your use case, cf. [Next Steps](#next-steps)
 5. Run this command to deploy the guidance ```cdk deploy --all```. `cdk` might prompt you about changes in your account. The changes need to be accepted for the deployment to work.
 6. Capture the DNS name of the load balancer ```aws cloudformation describe-stacks --stack-name "GlxApp" --query "Stacks[0].Outputs[0].OutputValue" --output text```
 
