@@ -1,5 +1,5 @@
 import 'source-map-support/register';
-import fs = require("fs");
+import fs = require('fs');
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as eks from 'aws-cdk-lib/aws-eks';
@@ -9,10 +9,10 @@ import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 function loadConfigs() {
-  const configsPath = __dirname + "/../configs/";
-  const files = fs.readdirSync(configsPath).filter((elm) =>
-    [".xml", ".conf", ".yml"].some((s) => elm.endsWith(s))
-  );
+  const configsPath = __dirname + '/../configs/';
+  const files = fs
+    .readdirSync(configsPath)
+    .filter((elm) => ['.xml', '.conf', '.yml'].some((s) => elm.endsWith(s)));
 
   const configFiles: Record<string, string> = {};
 
@@ -24,18 +24,22 @@ function loadConfigs() {
 }
 
 function addCertificateToLoadbalancer(arn: String) {
-  return arn ?
-    { "alb\.ingress\.kubernetes\.io/certificate-arn": arn } : {};
+  return arn ? { 'alb.ingress.kubernetes.io/certificate-arn': arn } : {};
 }
 
 function addS3bucketToLogLoadBalancerLogs(bucketname: String, prefix: String) {
-  return bucketname ?
-    { "alb\.ingress\.kubernetes\.io/load-balancer-attributes": `access_logs.s3.enabled=true,access_logs.s3.bucket=${bucketname},access_logs.s3.prefix=${prefix}` } : {};
+  return bucketname
+    ? {
+        'alb.ingress.kubernetes.io/load-balancer-attributes': `access_logs.s3.enabled=true,access_logs.s3.bucket=${bucketname},access_logs.s3.prefix=${prefix}`,
+      }
+    : {};
 }
 
 export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
-  databaseCluster: rds.ServerlessCluster;
+  databasePort: number;
+  databaseCluster: rds.IDatabaseCluster;
+  databaseSecret: secretsmanager.ISecret;
   rabbitmqCluster: amazonmq.CfnBroker;
   rabbitmqSecret: secretsmanager.ISecret;
   fileSystem: efs.IFileSystem;
@@ -46,203 +50,233 @@ export class ApplicationStack extends cdk.Stack {
     super(scope, id, props);
 
     const namespace: string = this.node.tryGetContext('galaxy.namespace');
-    const refdataEnabled: boolean = this.node.tryGetContext('galaxy.refdataEnabled');
+    const refdataEnabled: boolean = this.node.tryGetContext(
+      'galaxy.refdataEnabled'
+    );
 
-    const efsStorageClass = new eks.KubernetesManifest(this, "efsStorageClass", {
-      cluster: props.eksCluster,
-      overwrite: true,
-      manifest: [
-        {
-          "kind": "StorageClass",
-          "apiVersion": "storage.k8s.io/v1",
-          "metadata": {
-            "name": "efs-sc"
+    const efsStorageClass = new eks.KubernetesManifest(
+      this,
+      'efsStorageClass',
+      {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            kind: 'StorageClass',
+            apiVersion: 'storage.k8s.io/v1',
+            metadata: {
+              name: 'efs-sc',
+            },
+            provisioner: 'efs.csi.aws.com',
+            mountOptions: ['tls'],
+            parameters: {
+              provisioningMode: 'efs-ap',
+              fileSystemId: props.fileSystem.fileSystemId,
+              directoryPerms: '700',
+              gidRangeStart: '1000',
+              gidRangeEnd: '2000',
+              basePath: '/dynamic_provisioning',
+            },
           },
-          "provisioner": "efs.csi.aws.com",
-          "mountOptions": [
-            "tls"
-          ],
-          "parameters": {
-            "provisioningMode": "efs-ap",
-            "fileSystemId": props.fileSystem.fileSystemId,
-            "directoryPerms": "700",
-            "gidRangeStart": "1000",
-            "gidRangeEnd": "2000",
-            "basePath": "/dynamic_provisioning"
-          }
-        },
-      ]
-    });
+        ],
+      }
+    );
 
     efsStorageClass.node.addDependency(props.fileSystem.mountTargetsAvailable);
 
-    const galaxyEKSSecretStore = new eks.KubernetesManifest(this, "galaxyEKSSecretStore", {
-      cluster: props.eksCluster,
-      overwrite: true,
-      manifest: [
-        {
-          apiVersion: "external-secrets.io/v1beta1",
-          kind: "ClusterSecretStore",
-          metadata: {
-            name: "aws-secretsmanager",
-          },
-          spec: {
-            provider: {
-              aws: {
-                service: "SecretsManager",
-                region: cdk.Stack.of(this).region,
-                auth: {
-                  jwt: {
-                    serviceAccountRef: {
-                      name: "external-secrets-sa",
-                      namespace: "external-secrets",
+    const galaxyEKSSecretStore = new eks.KubernetesManifest(
+      this,
+      'galaxyEKSSecretStore',
+      {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            apiVersion: 'external-secrets.io/v1beta1',
+            kind: 'ClusterSecretStore',
+            metadata: {
+              name: 'aws-secretsmanager',
+            },
+            spec: {
+              provider: {
+                aws: {
+                  service: 'SecretsManager',
+                  region: cdk.Stack.of(this).region,
+                  auth: {
+                    jwt: {
+                      serviceAccountRef: {
+                        name: 'external-secrets-sa',
+                        namespace: 'external-secrets',
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
-      ]
-    });
+        ],
+      }
+    );
 
-    const galaxyEKSNamespace = new eks.KubernetesManifest(this, "galaxyEKSNamespace", {
-      cluster: props.eksCluster,
-      overwrite: true,
-      manifest: [
-        {
-          apiVersion: "v1",
-          kind: "Namespace",
-          metadata: {
-            name: namespace,
-          },
-        },
-      ]
-    });
-
-    const galaxyEKSSecretPostgresql = new eks.KubernetesManifest(this, "galaxyEKSSecretPostgresql", {
-      cluster: props.eksCluster,
-      overwrite: true,
-      manifest: [
-        {
-          apiVersion: "external-secrets.io/v1beta1",
-          kind: "ExternalSecret",
-          metadata: {
-            name: "galaxy.credentials.postgresql",
-            namespace: namespace,
-          },
-          spec: {
-            secretStoreRef: {
-              name: "aws-secretsmanager",
-              kind: "ClusterSecretStore",
+    const galaxyEKSNamespace = new eks.KubernetesManifest(
+      this,
+      'galaxyEKSNamespace',
+      {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            apiVersion: 'v1',
+            kind: 'Namespace',
+            metadata: {
+              name: namespace,
             },
-            target: {
-              name: "galaxy.credentials.postgresql",
-              creationPolicy: "Orphan",
-            },
-            data: [
-              {
-                secretKey: "username",
-                remoteRef: {
-                  key: props.databaseCluster.secret?.secretName,
-                  property: "username",
-                },
-              },
-              {
-                secretKey: "password",
-                remoteRef: {
-                  key: props.databaseCluster.secret?.secretName,
-                  property: "password",
-                },
-              },
-            ],
           },
-        },
-      ]
-    });
+        ],
+      }
+    );
 
-    galaxyEKSSecretPostgresql.node.addDependency(galaxyEKSNamespace, galaxyEKSSecretStore);
-
-    const galaxyEKSSecretRabbitmq = new eks.KubernetesManifest(this, "galaxyEKSSecretRabbitmq", {
-      cluster: props.eksCluster,
-      overwrite: true,
-      manifest: [
-        {
-          apiVersion: "external-secrets.io/v1beta1",
-          kind: "ExternalSecret",
-          metadata: {
-            name: "galaxy.credentials.rabbitmq",
-            namespace: namespace,
-          },
-          spec: {
-            secretStoreRef: {
-              name: "aws-secretsmanager",
-              kind: "ClusterSecretStore",
+    const galaxyEKSSecretPostgresql = new eks.KubernetesManifest(
+      this,
+      'galaxyEKSSecretPostgresql',
+      {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            apiVersion: 'external-secrets.io/v1beta1',
+            kind: 'ExternalSecret',
+            metadata: {
+              name: 'galaxy.credentials.postgresql',
+              namespace: namespace,
             },
-            target: {
-              name: "galaxy.credentials.rabbitmq",
-              creationPolicy: "Orphan",
+            spec: {
+              secretStoreRef: {
+                name: 'aws-secretsmanager',
+                kind: 'ClusterSecretStore',
+              },
+              target: {
+                name: 'galaxy.credentials.postgresql',
+                creationPolicy: 'Orphan',
+              },
+              data: [
+                {
+                  secretKey: 'username',
+                  remoteRef: {
+                    key: props.databaseSecret.secretName,
+                    property: 'username',
+                  },
+                },
+                {
+                  secretKey: 'password',
+                  remoteRef: {
+                    key: props.databaseSecret.secretName,
+                    property: 'password',
+                  },
+                },
+              ],
             },
-            data: [
-              {
-                secretKey: "username",
-                remoteRef: {
-                  key: props.rabbitmqSecret.secretName,
-                  property: "username",
-                },
-              },
-              {
-                secretKey: "password",
-                remoteRef: {
-                  key: props.rabbitmqSecret.secretName,
-                  property: "password",
-                },
-              },
-            ],
           },
-        },
-      ],
-    });
+        ],
+      }
+    );
 
-    galaxyEKSSecretRabbitmq.node.addDependency(galaxyEKSNamespace, galaxyEKSSecretStore);
+    galaxyEKSSecretPostgresql.node.addDependency(
+      galaxyEKSNamespace,
+      galaxyEKSSecretStore
+    );
+
+    const galaxyEKSSecretRabbitmq = new eks.KubernetesManifest(
+      this,
+      'galaxyEKSSecretRabbitmq',
+      {
+        cluster: props.eksCluster,
+        overwrite: true,
+        manifest: [
+          {
+            apiVersion: 'external-secrets.io/v1beta1',
+            kind: 'ExternalSecret',
+            metadata: {
+              name: 'galaxy.credentials.rabbitmq',
+              namespace: namespace,
+            },
+            spec: {
+              secretStoreRef: {
+                name: 'aws-secretsmanager',
+                kind: 'ClusterSecretStore',
+              },
+              target: {
+                name: 'galaxy.credentials.rabbitmq',
+                creationPolicy: 'Orphan',
+              },
+              data: [
+                {
+                  secretKey: 'username',
+                  remoteRef: {
+                    key: props.rabbitmqSecret.secretName,
+                    property: 'username',
+                  },
+                },
+                {
+                  secretKey: 'password',
+                  remoteRef: {
+                    key: props.rabbitmqSecret.secretName,
+                    property: 'password',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }
+    );
+
+    galaxyEKSSecretRabbitmq.node.addDependency(
+      galaxyEKSNamespace,
+      galaxyEKSSecretStore
+    );
     const s3csiValues = {
       deploy: false, // deployed outside of Galaxy Helm
       storageClass: {
-        name: "refdata-gxy-data",
-        mounter: "geesefs",
-        singleBucket: "biorefdata",
-        mountOptions: "-o allow_other --dir-mode 0777 --file-mode 0666 --cache /tmp/geesecache --stat-cache-ttl 9m0s --cache-to-disk-hits 1 --no-dir-object --no-implicit-dir --stat-cache-ttl 120m0s --max-disk-cache-fd 4096",
+        name: 'refdata-gxy-data',
+        mounter: 'geesefs',
+        singleBucket: 'biorefdata',
+        mountOptions:
+          '-o allow_other --dir-mode 0777 --file-mode 0666 --cache /tmp/geesecache --stat-cache-ttl 9m0s --cache-to-disk-hits 1 --no-dir-object --no-implicit-dir --stat-cache-ttl 120m0s --max-disk-cache-fd 4096',
       },
       secret: {
         create: false,
         usePrefix: true,
-        prefix: "/galaxy/v1",
-      }
+        prefix: '/galaxy/v1',
+      },
     };
 
     const galaxyChart = new eks.HelmChart(this, 'galaxyChart', {
       cluster: props.eksCluster,
       chart: 'galaxy',
       release: 'galaxy',
-      repository: 'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
+      repository:
+        'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
       namespace: namespace,
       timeout: cdk.Duration.minutes(10),
       values: {
         configs: {
-          "galaxy.yml": {
+          'galaxy.yml': {
             galaxy: {
-              admin_users: this.node.tryGetContext("galaxy.adminEmails"),
+              admin_users: this.node.tryGetContext('galaxy.adminEmails'),
               require_login: true,
               show_welcome_with_login: true,
-              log_level: this.node.tryGetContext("galaxy.logLevel")
+              log_level: this.node.tryGetContext('galaxy.logLevel'),
             },
           },
           ...loadConfigs(),
         },
-        // Needed as Helm currently does not check and install dependencies 
-        extraInitCommands: this.node.tryGetContext("galaxy.additionalSetupCommands"),
+        // Needed as Helm currently does not check and install dependencies
+        extraInitCommands: this.node.tryGetContext(
+          'galaxy.additionalSetupCommands'
+        ),
         extraFileMappings: {
-          "/galaxy/server/static/welcome.html": {
+          '/galaxy/server/static/welcome.html': {
             content: `      
               <!DOCTYPE html>
               <html lang="en">
@@ -273,46 +307,49 @@ export class ApplicationStack extends cdk.Stack {
                       </div>
                   </body>
               </html>`,
-          }
+          },
         },
         rabbitmq: {
           deploy: false,
           port: 5671,
-          protocol: "amqps",
+          protocol: 'amqps',
           existingCluster: cdk.Fn.importValue('rabbitmqEndpoint'),
           existingSecret: 'galaxy.credentials.rabbitmq',
         },
         postgresql: {
           deploy: false,
-          existingDatabase: props.databaseCluster.clusterEndpoint.hostname,
-          galaxyConnectionParams: "",
+          existingDatabase: `${props.databaseCluster.clusterEndpoint.hostname}:${props.databasePort}`,
+          galaxyConnectionParams: '',
           galaxyExistingSecret: 'galaxy.credentials.postgresql',
         },
         refdata: {
           enabled: refdataEnabled,
-          type: "s3csi",
+          type: 's3csi',
         },
         s3csi: s3csiValues,
         cvmfs: {
           deploy: false,
         },
         ingress: {
-          path: "/",
+          path: '/',
           hosts: [
             {
-              paths: [
-                { path: "/*" }
-              ]
-            }
+              paths: [{ path: '/*' }],
+            },
           ],
-          ingressClassName: "alb",
+          ingressClassName: 'alb',
           annotations: {
-            "alb\.ingress\.kubernetes\.io/target-type": "ip",
-            "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-            "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
-            "alb\.ingress\.kubernetes\.io/group\.order": "99",
-            ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.elbCertArn')),
-            ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.elbAccessLogsBucketname'), 'galaxy'),
+            'alb.ingress.kubernetes.io/target-type': 'ip',
+            'alb.ingress.kubernetes.io/group.name': 'galaxy',
+            'alb.ingress.kubernetes.io/scheme': 'internet-facing',
+            'alb.ingress.kubernetes.io/group.order': '99',
+            ...addCertificateToLoadbalancer(
+              this.node.tryGetContext('galaxy.elbCertArn')
+            ),
+            ...addS3bucketToLogLoadBalancerLogs(
+              this.node.tryGetContext('galaxy.elbAccessLogsBucketname'),
+              'galaxy'
+            ),
           },
           canary: {
             enabled: false,
@@ -320,44 +357,53 @@ export class ApplicationStack extends cdk.Stack {
         },
         tusd: {
           ingress: {
-            ingressClassName: "alb",
+            ingressClassName: 'alb',
             annotations: {
-              "alb\.ingress\.kubernetes\.io/target-type": "ip",
-              "alb\.ingress\.kubernetes\.io/group\.name": "galaxy",
-              "alb\.ingress\.kubernetes\.io/scheme": "internet-facing",
-              ...addCertificateToLoadbalancer(this.node.tryGetContext('galaxy.elbCertArn')),
-              ...addS3bucketToLogLoadBalancerLogs(this.node.tryGetContext('galaxy.elbAccessLogsBucketname'), 'tusd'),
+              'alb.ingress.kubernetes.io/target-type': 'ip',
+              'alb.ingress.kubernetes.io/group.name': 'galaxy',
+              'alb.ingress.kubernetes.io/scheme': 'internet-facing',
+              ...addCertificateToLoadbalancer(
+                this.node.tryGetContext('galaxy.elbCertArn')
+              ),
+              ...addS3bucketToLogLoadBalancerLogs(
+                this.node.tryGetContext('galaxy.elbAccessLogsBucketname'),
+                'tusd'
+              ),
             },
           },
         },
         persistence: {
-          storageClass: "efs-sc",
-          accessMode: "ReadWriteMany",
-        }
-      }
+          storageClass: 'efs-sc',
+          accessMode: 'ReadWriteMany',
+        },
+      },
     });
 
-    galaxyChart.node.addDependency(efsStorageClass, galaxyEKSSecretPostgresql, galaxyEKSSecretRabbitmq);
+    galaxyChart.node.addDependency(
+      efsStorageClass,
+      galaxyEKSSecretPostgresql,
+      galaxyEKSSecretRabbitmq
+    );
 
     if (refdataEnabled) {
-      const csiS3Secret = new eks.KubernetesManifest(this, "csiS3Secret", {
+      const csiS3Secret = new eks.KubernetesManifest(this, 'csiS3Secret', {
         cluster: props.eksCluster,
         overwrite: true,
         manifest: [
           {
-            apiVersion: "v1",
-            kind: "Secret",
+            apiVersion: 'v1',
+            kind: 'Secret',
             metadata: {
               namespace: namespace,
-              name: "csi-s3-secret",
+              name: 'csi-s3-secret',
             },
             stringData: {
-              accessKeyID: "",
-              secretAccessKey: "",
-              endpoint: "https://s3.ap-southeast-2.amazonaws.com",
-            }
+              accessKeyID: '',
+              secretAccessKey: '',
+              endpoint: 'https://s3.ap-southeast-2.amazonaws.com',
+            },
           },
-        ]
+        ],
       });
 
       csiS3Secret.node.addDependency(galaxyEKSNamespace);
@@ -367,7 +413,8 @@ export class ApplicationStack extends cdk.Stack {
         cluster: props.eksCluster,
         chart: 'csi-s3',
         release: 'csi-s3',
-        repository: 'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
+        repository:
+          'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
         namespace: namespace,
         values: s3csiValues,
       });
@@ -378,11 +425,11 @@ export class ApplicationStack extends cdk.Stack {
 
     const galaxyDNS = new eks.KubernetesObjectValue(this, 'galaxyDNS', {
       cluster: props.eksCluster,
-      objectType: "ingress",
+      objectType: 'ingress',
       objectNamespace: namespace,
       objectName: 'galaxy',
       jsonPath: '.status.loadBalancer.ingress[0].hostname',
-    })
+    });
 
     galaxyDNS.node.addDependency(galaxyChart);
 

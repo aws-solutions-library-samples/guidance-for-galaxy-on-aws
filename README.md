@@ -33,7 +33,7 @@ This guidance helps customers run [Galaxy](https://galaxyproject.org/) on AWS an
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $2200 per month for running and processing data on the initially provisioned three `m5.4xlarge` instances, providing 48 vCPUs and 192 GiB Memory in total. Both the number of instances and the type can be modified, as described in [Next Steps](#infrastructure-configuration).
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2023, the cost for running this Guidance with the default settings in the N. Virginia (us-east-1) is approximately $2200 per month. The main cost drivers are the the initially provisioned three `m5.4xlarge` instances for about $1700 per month, providing 48 vCPUs and 192 GiB Memory in total. Both the number of instances and the type can be modified, as described in [Next Steps](#infrastructure-configuration).
 
 
 ## Prerequisites
@@ -123,7 +123,8 @@ app.node.setContext("vpc.id", "vpc-0a1234567890");
 | galaxy.elbCertArn              | No                               | arn:aws:acm:us-east-1:122333:certificate/ce | ARN of a certificate in Amazon Certificate Manager. Enables TLS/SSL communication with the load balancer fronting Galaxy                                                                                                                                                                                                                                                         |
 | galaxy.elbAccessLogsBucketname | No                               | galaxy-alb-access-log-bucket                | Specify a name of the existing S3 bucket name to store the Elastic Load Balancer stores [access logs](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html). The bucket requires a compliant [bucket policy](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html#attach-bucket-policy). |
 | cloudwatch.logRetentionDays    | Yes                              | 30                                          | Retention policy in days for newly created CloudWatch log groups. If set to 0, logs will never expire.                                                                                                                                                                                                                                                                           |
-
+| rds.disableSecretRotation      | No                               | false                                       | Disables the automatic PostgreSQL key rotation after 365 days
+| mq.disableSecretRotation       | No                               | false                                       | Disables the automatic RabbitMQ key rotation after 365 days
 For additional EKS and VPC configuration settings, refer to the EKS Blueprints [Quick Start Guide](https://aws-quickstart.github.io/cdk-eks-blueprints/).
 
 ##### Logging and Amazon CloudWatch integration
