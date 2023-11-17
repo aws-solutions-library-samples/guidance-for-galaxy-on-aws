@@ -1,17 +1,16 @@
-import "source-map-support/register";
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as eks from "aws-cdk-lib/aws-eks";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as rds from "aws-cdk-lib/aws-rds";
-import * as efs from "aws-cdk-lib/aws-efs";
-import * as iam from "aws-cdk-lib/aws-iam";
-import * as backup from "aws-cdk-lib/aws-backup";
-import * as amazonmq from "aws-cdk-lib/aws-amazonmq";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as logs from "aws-cdk-lib/aws-logs";
-import * as lambdaPython from "@aws-cdk/aws-lambda-python-alpha";
+import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import * as eks from 'aws-cdk-lib/aws-eks';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as rds from 'aws-cdk-lib/aws-rds';
+import * as efs from 'aws-cdk-lib/aws-efs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as backup from 'aws-cdk-lib/aws-backup';
+import * as amazonmq from 'aws-cdk-lib/aws-amazonmq';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaPython from '@aws-cdk/aws-lambda-python-alpha';
 
 export interface InfrastructureStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
@@ -34,10 +33,10 @@ export class InfrastructureStack extends cdk.Stack {
 
     const fileSystemSecurityGroup = new ec2.SecurityGroup(
       this,
-      "fileSystemSecurityGroup",
+      'fileSystemSecurityGroup',
       {
         vpc: props.eksCluster.vpc,
-        description: "Security Group to access EFS from Galaxy",
+        description: 'Security Group to access EFS from Galaxy',
         allowAllOutbound: true,
       }
     );
@@ -45,10 +44,10 @@ export class InfrastructureStack extends cdk.Stack {
     fileSystemSecurityGroup.addIngressRule(
       props.eksCluster.clusterSecurityGroup,
       ec2.Port.tcp(2049),
-      "k8s ingress"
+      'k8s ingress'
     );
 
-    this.fileSystem = new efs.FileSystem(this, "fileSystem", {
+    this.fileSystem = new efs.FileSystem(this, 'fileSystem', {
       vpc: props.eksCluster.vpc,
       securityGroup: fileSystemSecurityGroup,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -59,11 +58,11 @@ export class InfrastructureStack extends cdk.Stack {
     /////////////////////////////
 
     this.databasePort = 2345;
-    const galaxydbuser = "galaxydbuser";
+    const galaxydbuser = 'galaxydbuser';
 
     const databaseSecurityGroup = new ec2.SecurityGroup(
       this,
-      "databaseSecurityGroup",
+      'databaseSecurityGroup',
       {
         vpc: props.eksCluster.vpc,
       }
@@ -72,53 +71,53 @@ export class InfrastructureStack extends cdk.Stack {
     databaseSecurityGroup.addIngressRule(
       props.eksCluster.clusterSecurityGroup,
       ec2.Port.tcp(this.databasePort),
-      "k8s ingress"
+      'k8s ingress'
     );
 
-    this.databaseSecret = new secretsmanager.Secret(this, "databaseSecret", {
+    this.databaseSecret = new secretsmanager.Secret(this, 'databaseSecret', {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: galaxydbuser }),
-        generateStringKey: "password",
-        excludeCharacters: "<>/\"#%{}|\\^~[]`@, :;='.+-?", // Galaxy helm chart does not URL encode the password as of now
+        generateStringKey: 'password',
+        excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
         passwordLength: 16,
       },
     });
 
     const rdsDisableSecretRotation = this.node.tryGetContext(
-      "rds.disableSecretRotation"
+      'rds.disableSecretRotation'
     );
     if (!rdsDisableSecretRotation) {
-      this.databaseSecret.addRotationSchedule("rotateDBkey", {
+      this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
-          excludeCharacters: "<>/\"#%{}|\\^~[]`@, :;='.+-?", // Galaxy helm chart does not URL encode the password as of now
+          excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
         }),
         automaticallyAfter: cdk.Duration.days(
-          this.node.tryGetContext("galaxy.keyRotationInterval") || 365
+          this.node.tryGetContext('galaxy.keyRotationInterval') || 365
         ),
       });
     }
 
-    this.databaseCluster = new rds.DatabaseCluster(this, "databaseCluster", {
+    this.databaseCluster = new rds.DatabaseCluster(this, 'databaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
         version: rds.AuroraPostgresEngineVersion.VER_13_10,
       }),
       vpc: props.eksCluster.vpc,
       credentials: rds.Credentials.fromSecret(this.databaseSecret),
-      writer: rds.ClusterInstance.serverlessV2("auroraServerlessWriter"),
+      writer: rds.ClusterInstance.serverlessV2('auroraServerlessWriter'),
       readers: undefined,
-      serverlessV2MinCapacity: this.node.tryGetContext("rds.minCapacity"),
-      serverlessV2MaxCapacity: this.node.tryGetContext("rds.maxCapacity"),
+      serverlessV2MinCapacity: this.node.tryGetContext('rds.minCapacity'),
+      serverlessV2MaxCapacity: this.node.tryGetContext('rds.maxCapacity'),
       port: this.databasePort,
       //cloudwatchLogsRetention: cdk
-      defaultDatabaseName: "galaxy",
+      defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
       storageEncrypted: true,
       deletionProtection: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       backup: {
         retention: cdk.Duration.days(
-          this.node.tryGetContext("rds.snapshotRetentionInDays")
+          this.node.tryGetContext('rds.snapshotRetentionInDays')
         ),
       },
     });
@@ -127,57 +126,57 @@ export class InfrastructureStack extends cdk.Stack {
     // # RABBITMQ
     /////////////////////////////
 
-    this.rabbitmqSecret = new secretsmanager.Secret(this, "rabbitmqSecret", {
+    this.rabbitmqSecret = new secretsmanager.Secret(this, 'rabbitmqSecret', {
       generateSecretString: {
-        secretStringTemplate: JSON.stringify({ username: "administrator" }),
-        generateStringKey: "password",
-        excludeCharacters: "<>/\"#%{}|\\^~[]`@, :;='.+-?", // Galaxy helm chart does not URL encode the password as of now
+        secretStringTemplate: JSON.stringify({ username: 'administrator' }),
+        generateStringKey: 'password',
+        excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
         passwordLength: 16,
       },
     });
 
     const rabbitMQAsCluster: boolean =
-      this.node.tryGetContext("rabbitmq.cluster");
+      this.node.tryGetContext('rabbitmq.cluster');
     const rabbitMQInstanceSize:
-      | "mq.t3.micro"
-      | "mq.m5.large"
-      | "mq.m5.xlarge"
-      | "mq.m5.2xlarge"
-      | "mq.m5.4xlarge" = this.node.tryGetContext("rabbitmq.instance");
+      | 'mq.t3.micro'
+      | 'mq.m5.large'
+      | 'mq.m5.xlarge'
+      | 'mq.m5.2xlarge'
+      | 'mq.m5.4xlarge' = this.node.tryGetContext('rabbitmq.instance');
 
     const rabbitmqSecurityGroup = new ec2.SecurityGroup(
       this,
-      "rabbitmqSecurityGroup",
+      'rabbitmqSecurityGroup',
       {
         vpc: props.eksCluster.vpc,
-        description: "Security Group to access RabbitMQ from Galaxy",
+        description: 'Security Group to access RabbitMQ from Galaxy',
         allowAllOutbound: true,
       }
     );
     rabbitmqSecurityGroup.addIngressRule(
       props.eksCluster.clusterSecurityGroup,
       ec2.Port.tcp(5671),
-      "k8s ingress"
+      'k8s ingress'
     );
 
-    this.rabbitmqCluster = new amazonmq.CfnBroker(this, "rabbitmqCluster", {
+    this.rabbitmqCluster = new amazonmq.CfnBroker(this, 'rabbitmqCluster', {
       autoMinorVersionUpgrade: true,
-      brokerName: "rabbitmq" + cdk.Aws.STACK_NAME,
+      brokerName: 'rabbitmq' + cdk.Aws.STACK_NAME,
       deploymentMode: rabbitMQAsCluster
-        ? "CLUSTER_MULTI_AZ"
-        : "SINGLE_INSTANCE",
-      engineType: "RABBITMQ",
-      engineVersion: "3.11.16",
+        ? 'CLUSTER_MULTI_AZ'
+        : 'SINGLE_INSTANCE',
+      engineType: 'RABBITMQ',
+      engineVersion: '3.11.16',
       hostInstanceType: rabbitMQInstanceSize,
       publiclyAccessible: false,
       users: [
         {
           username: this.rabbitmqSecret
-            .secretValueFromJson("username")
+            .secretValueFromJson('username')
             .unsafeUnwrap()
             .toString(),
           password: this.rabbitmqSecret
-            .secretValueFromJson("password")
+            .secretValueFromJson('password')
             .unsafeUnwrap()
             .toString(),
         },
@@ -191,19 +190,19 @@ export class InfrastructureStack extends cdk.Stack {
     const rabbitMqUrl = cdk.Fn.select(
       1,
       cdk.Fn.split(
-        "//",
+        '//',
         cdk.Fn.select(
           1,
           cdk.Fn.split(
-            ":",
+            ':',
             cdk.Fn.select(0, this.rabbitmqCluster.attrAmqpEndpoints)
           )
         )
       )
     );
 
-    new cdk.CfnOutput(this, "rabbitmqEndpoint", {
-      exportName: "rabbitmqEndpoint",
+    new cdk.CfnOutput(this, 'rabbitmqEndpoint', {
+      exportName: 'rabbitmqEndpoint',
       value: rabbitMqUrl,
     });
 
@@ -211,20 +210,20 @@ export class InfrastructureStack extends cdk.Stack {
     // # RABBITMQ SECRET ROTATION
     /////////////////////////////
     const mqDisableSecretRotation = this.node.tryGetContext(
-      "mq.disableSecretRotation"
+      'mq.disableSecretRotation'
     );
     if (!mqDisableSecretRotation) {
       const lambdaMqSecretRotatingRole = new iam.Role(
         this,
-        "lambdaMqSecretRotatingRole",
+        'lambdaMqSecretRotatingRole',
         {
-          assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+          assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
         }
       );
 
       const lambdaMqSecurityGroup = new ec2.SecurityGroup(
         this,
-        "lambdaMqSecurityGroup",
+        'lambdaMqSecurityGroup',
         {
           vpc: props.eksCluster.vpc,
           allowAllOutbound: true,
@@ -233,25 +232,25 @@ export class InfrastructureStack extends cdk.Stack {
 
       const lambdaMqSecretRotatingLayer = new lambdaPython.PythonLayerVersion(
         this,
-        "lambdaMqSecretRotatingLayer",
+        'lambdaMqSecretRotatingLayer',
         {
-          entry: "resources/lambda_mq_secret_rotating_layer",
+          entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-          layerVersionName: "lambdaMqSecretRotatingLayer",
+          layerVersionName: 'lambdaMqSecretRotatingLayer',
         }
       );
       const lambdaMqSecretRotating = new lambdaPython.PythonFunction(
         this,
-        "lambdaMqSecretRotating",
+        'lambdaMqSecretRotating',
         {
           runtime: lambda.Runtime.PYTHON_3_11,
-          entry: "resources/lambda_mq_secret_rotating",
+          entry: 'resources/lambda_mq_secret_rotating',
           memorySize: 128,
           timeout: cdk.Duration.minutes(1),
           role: lambdaMqSecretRotatingRole,
           environment: {
             HOST: `https://${rabbitMqUrl}:443`,
-            EXCLUDE_CHARACTERS: "<>/\"#%{}|\\^~[]`@, :;='.+-?",
+            EXCLUDE_CHARACTERS: '<>/"#%{}|\\^~[]`@, :;=\'.+-?',
           },
           layers: [lambdaMqSecretRotatingLayer],
           vpc: props.eksCluster.vpc,
@@ -259,17 +258,17 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
 
-      this.rabbitmqSecret.addRotationSchedule("rotateMQkey", {
+      this.rabbitmqSecret.addRotationSchedule('rotateMQkey', {
         rotationLambda: lambdaMqSecretRotating,
         automaticallyAfter: cdk.Duration.days(
-          this.node.tryGetContext("galaxy.keyRotationInterval") || 365
+          this.node.tryGetContext('galaxy.keyRotationInterval') || 365
         ),
       });
 
       rabbitmqSecurityGroup.addIngressRule(
         lambdaMqSecurityGroup,
         ec2.Port.tcp(443),
-        "lambda key rotation ingress"
+        'lambda key rotation ingress'
       );
 
       lambdaMqSecretRotatingRole.addToPolicy(
@@ -277,10 +276,10 @@ export class InfrastructureStack extends cdk.Stack {
           effect: iam.Effect.ALLOW,
           resources: [this.rabbitmqSecret.secretArn],
           actions: [
-            "secretsmanager:GetSecretValue",
-            "secretsmanager:DescribeSecret",
-            "secretsmanager:PutSecretValue",
-            "secretsmanager:UpdateSecretVersionStage",
+            'secretsmanager:GetSecretValue',
+            'secretsmanager:DescribeSecret',
+            'secretsmanager:PutSecretValue',
+            'secretsmanager:UpdateSecretVersionStage',
           ],
         })
       );
@@ -291,13 +290,13 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaMqSecretRotatingRole.addToPolicy(
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          resources: ["*"],
+          resources: ['*'],
           actions: [
-            "ec2:CreateNetworkInterface",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:DeleteNetworkInterface",
-            "ec2:AssignPrivateIpAddresses",
-            "ec2:UnassignPrivateIpAddresses",
+            'ec2:CreateNetworkInterface',
+            'ec2:DescribeNetworkInterfaces',
+            'ec2:DeleteNetworkInterface',
+            'ec2:AssignPrivateIpAddresses',
+            'ec2:UnassignPrivateIpAddresses',
           ],
         })
       );
@@ -308,15 +307,15 @@ export class InfrastructureStack extends cdk.Stack {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           resources: [this.rabbitmqSecret.secretArn],
-          actions: ["secretsmanager:GetRandomPassword"],
+          actions: ['secretsmanager:GetRandomPassword'],
         })
       );
 
       lambdaMqSecretRotating.addPermission(
-        "secretsManagerExecutionPermission",
+        'secretsManagerExecutionPermission',
         {
-          action: "lambda:InvokeFunction",
-          principal: new iam.ServicePrincipal("secretsmanager.amazonaws.com"),
+          action: 'lambda:InvokeFunction',
+          principal: new iam.ServicePrincipal('secretsmanager.amazonaws.com'),
           sourceAccount: this.account,
         }
       );
@@ -327,17 +326,20 @@ export class InfrastructureStack extends cdk.Stack {
       lambdaMqSecretRotatingRole.addToPolicy(
         new iam.PolicyStatement({
           actions: [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:DescribeLogStreams",
-            "logs:PutLogEvents",
-            "logs:PutRetentionPolicy",
+            'logs:CreateLogGroup',
+            'logs:CreateLogStream',
+            'logs:DescribeLogStreams',
+            'logs:PutLogEvents',
+            'logs:PutRetentionPolicy',
           ],
           resources: [
             cdk.Stack.of(this).formatArn({
-              service: "logs",
-              resource: "log-group",
-              resourceName: `/aws/lambda/${lambdaMqSecretRotating.node.path.replace('/', '-')}*:*`,
+              service: 'logs',
+              resource: 'log-group',
+              resourceName: `/aws/lambda/${lambdaMqSecretRotating.node.path.replace(
+                '/',
+                '-'
+              )}*:*`,
               arnFormat: cdk.ArnFormat.COLON_RESOURCE_NAME,
             }),
           ],
@@ -350,11 +352,11 @@ export class InfrastructureStack extends cdk.Stack {
     /////////////////////////////
 
     const backupsEnabled: boolean = this.node.tryGetContext(
-      "galaxy.backupsEnabled"
+      'galaxy.backupsEnabled'
     );
 
     if (backupsEnabled) {
-      const vault = new backup.BackupVault(this, "BackupVault", {});
+      const vault = new backup.BackupVault(this, 'BackupVault', {});
       const vaultUid: string = cdk.Names.uniqueId(this);
 
       const policyDocument = new iam.PolicyDocument({
@@ -365,28 +367,28 @@ export class InfrastructureStack extends cdk.Stack {
               `arn:aws:rds:${this.region}:${this.account}:cluster:${this.databaseCluster.clusterIdentifier}`,
             ],
             actions: [
-              "rds:CreateDBClusterSnapshot",
-              "rds:DescribeDBClusters",
-              "rds:DescribeDBClusterSnapshots",
-              "rds:AddTagsToResource",
-              "rds:ListTagsForResource",
-              "rds:CopyDBClusterSnapshot",
+              'rds:CreateDBClusterSnapshot',
+              'rds:DescribeDBClusters',
+              'rds:DescribeDBClusterSnapshots',
+              'rds:AddTagsToResource',
+              'rds:ListTagsForResource',
+              'rds:CopyDBClusterSnapshot',
             ],
           }),
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             resources: [this.fileSystem.fileSystemArn],
             actions: [
-              "elasticfilesystem:Backup",
-              "elasticfilesystem:DescribeTags",
+              'elasticfilesystem:Backup',
+              'elasticfilesystem:DescribeTags',
             ],
           }),
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             resources: [vault.backupVaultArn],
             actions: [
-              "backup:DescribeBackupVault",
-              "backup:CopyIntoBackupVault",
+              'backup:DescribeBackupVault',
+              'backup:CopyIntoBackupVault',
             ],
           }),
           new iam.PolicyStatement({
@@ -396,27 +398,27 @@ export class InfrastructureStack extends cdk.Stack {
               this.fileSystem.fileSystemArn,
               vault.backupVaultArn,
             ],
-            actions: ["tag:GetResources"],
+            actions: ['tag:GetResources'],
           }),
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             resources: [
               `arn:aws:rds:${this.region}:${this.account}:cluster-snapshot:awsbackup:job*`,
             ],
-            actions: ["rds:DeleteDBClusterSnapshot"],
+            actions: ['rds:DeleteDBClusterSnapshot'],
             conditions: {
               StringEquals: {
-                "aws:cloudformation:stack-name": vaultUid,
+                'aws:cloudformation:stack-name': vaultUid,
               },
             },
           }),
         ],
       });
 
-      const role: iam.Role = new iam.Role(this, "backupvault", {
-        assumedBy: new iam.ServicePrincipal("backup.amazonaws.com"),
+      const role: iam.Role = new iam.Role(this, 'backupvault', {
+        assumedBy: new iam.ServicePrincipal('backup.amazonaws.com'),
         description:
-          "Role used by AWS Backup to create backups for Galaxy for data stored in Amazon Aurora and Amazon EFS",
+          'Role used by AWS Backup to create backups for Galaxy for data stored in Amazon Aurora and Amazon EFS',
         inlinePolicies: {
           galaxybackuppolicy: policyDocument,
         },
@@ -425,11 +427,11 @@ export class InfrastructureStack extends cdk.Stack {
 
       const plan = backup.BackupPlan.dailyMonthly1YearRetention(
         this,
-        "GalaxyBackups",
+        'GalaxyBackups',
         vault
       );
 
-      plan.addSelection("GalaxyInfraSelection", {
+      plan.addSelection('GalaxyInfraSelection', {
         resources: [
           backup.BackupResource.fromEfsFileSystem(this.fileSystem),
           backup.BackupResource.fromRdsDatabaseCluster(this.databaseCluster),
