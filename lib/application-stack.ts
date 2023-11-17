@@ -35,7 +35,9 @@ function addS3bucketToLogLoadBalancerLogs(bucketname: String, prefix: String) {
 
 export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
-  databaseCluster: rds.ServerlessCluster;
+  databasePort: number;
+  databaseCluster: rds.IDatabaseCluster;
+  databaseSecret: secretsmanager.ISecret;
   rabbitmqCluster: amazonmq.CfnBroker;
   rabbitmqSecret: secretsmanager.ISecret;
   fileSystem: efs.IFileSystem;
@@ -144,14 +146,14 @@ export class ApplicationStack extends cdk.Stack {
               {
                 secretKey: "username",
                 remoteRef: {
-                  key: props.databaseCluster.secret?.secretName,
+                  key: props.databaseSecret.secretName,
                   property: "username",
                 },
               },
               {
                 secretKey: "password",
                 remoteRef: {
-                  key: props.databaseCluster.secret?.secretName,
+                  key: props.databaseSecret.secretName,
                   property: "password",
                 },
               },
@@ -284,7 +286,7 @@ export class ApplicationStack extends cdk.Stack {
         },
         postgresql: {
           deploy: false,
-          existingDatabase: props.databaseCluster.clusterEndpoint.hostname,
+          existingDatabase: `${props.databaseCluster.clusterEndpoint.hostname}:${props.databasePort}`,
           galaxyConnectionParams: "",
           galaxyExistingSecret: 'galaxy.credentials.postgresql',
         },
