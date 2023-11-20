@@ -12,6 +12,10 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaPython from '@aws-cdk/aws-lambda-python-alpha';
 
+function isDefined(val: any){
+  return typeof val !== "undefined";
+}
+
 export interface InfrastructureStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
 }
@@ -83,10 +87,10 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
-    const rdsDisableSecretRotation = this.node.tryGetContext(
-      'rds.disableSecretRotation'
-    );
-    if (!rdsDisableSecretRotation) {
+    let contexRdsEnableSecretRotation = this.node.tryGetContext('rds.enableSecretRotation')
+    const rdsEnableSecretRotation = isDefined(contexRdsEnableSecretRotation)? contexRdsEnableSecretRotation: true;
+
+    if (rdsEnableSecretRotation) {
       this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
@@ -109,7 +113,6 @@ export class InfrastructureStack extends cdk.Stack {
       serverlessV2MinCapacity: this.node.tryGetContext('rds.minCapacity'),
       serverlessV2MaxCapacity: this.node.tryGetContext('rds.maxCapacity'),
       port: this.databasePort,
-      //cloudwatchLogsRetention: cdk
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
       storageEncrypted: true,
@@ -209,10 +212,9 @@ export class InfrastructureStack extends cdk.Stack {
     /////////////////////////////
     // # RABBITMQ SECRET ROTATION
     /////////////////////////////
-    const mqDisableSecretRotation = this.node.tryGetContext(
-      'mq.disableSecretRotation'
-    );
-    if (!mqDisableSecretRotation) {
+    let contextMqEnableSecretRotation = this.node.tryGetContext('mq.enableSecretRotation')
+    const mqEnableSecretRotation = isDefined(contextMqEnableSecretRotation)? contextMqEnableSecretRotation: true;
+    if (mqEnableSecretRotation) {
       const lambdaMqSecretRotatingRole = new iam.Role(
         this,
         'lambdaMqSecretRotatingRole',
@@ -236,6 +238,10 @@ export class InfrastructureStack extends cdk.Stack {
         {
           entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+          compatibleArchitectures: [
+            lambda.Architecture.ARM_64,
+            lambda.Architecture.X86_64,
+          ],
           layerVersionName: 'lambdaMqSecretRotatingLayer',
         }
       );
@@ -254,6 +260,7 @@ export class InfrastructureStack extends cdk.Stack {
           },
           layers: [lambdaMqSecretRotatingLayer],
           vpc: props.eksCluster.vpc,
+          architecture: lambda.Architecture.ARM_64,
           securityGroups: [lambdaMqSecurityGroup],
         }
       );

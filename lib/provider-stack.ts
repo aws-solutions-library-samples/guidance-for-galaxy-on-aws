@@ -87,7 +87,7 @@ export class ProviderStack extends cdk.Stack {
               enabled: true,
               logRetentionDays: this.node.tryGetContext(
                 'cloudwatch.logRetentionDays'
-              ),
+              ) || 30,
             },
           },
         }),
