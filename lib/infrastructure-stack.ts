@@ -31,6 +31,8 @@ export class InfrastructureStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: InfrastructureStackProps) {
     super(scope, id, props);
 
+    const characterToExclueInPassword = '<>$/"#%{}|\\^~[]`@, :;=\'.+-?'; // Galaxy helm chart does not URL encode the password as of now
+
     /////////////////////////////
     // # EFS
     /////////////////////////////
@@ -82,7 +84,7 @@ export class InfrastructureStack extends cdk.Stack {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: galaxydbuser }),
         generateStringKey: 'password',
-        excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
+        excludeCharacters: characterToExclueInPassword,
         passwordLength: 16,
       },
     });
@@ -94,7 +96,8 @@ export class InfrastructureStack extends cdk.Stack {
       this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
-          excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
+          excludeCharacters: characterToExclueInPassword, 
+          
         }),
         automaticallyAfter: cdk.Duration.days(
           this.node.tryGetContext('galaxy.keyRotationInterval') || 365
@@ -133,7 +136,7 @@ export class InfrastructureStack extends cdk.Stack {
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: 'administrator' }),
         generateStringKey: 'password',
-        excludeCharacters: '<>/"#%{}|\\^~[]`@, :;=\'.+-?', // Galaxy helm chart does not URL encode the password as of now
+        excludeCharacters: characterToExclueInPassword,
         passwordLength: 16,
       },
     });
@@ -256,7 +259,7 @@ export class InfrastructureStack extends cdk.Stack {
           role: lambdaMqSecretRotatingRole,
           environment: {
             HOST: `https://${rabbitMqUrl}:443`,
-            EXCLUDE_CHARACTERS: '<>/"#%{}|\\^~[]`@, :;=\'.+-?',
+            EXCLUDE_CHARACTERS: characterToExclueInPassword,
           },
           layers: [lambdaMqSecretRotatingLayer],
           vpc: props.eksCluster.vpc,

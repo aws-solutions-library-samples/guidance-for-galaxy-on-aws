@@ -83,6 +83,13 @@ The outputs of this stack can be viewed, for example, via the AWS Management con
 ### Production deployment and GitOps
 
 In case your team operates an existing cluster with multiple applications or if your organization has a dedicated team who is going to centrally operate a Kubernetes cluster, it might be beneficial to set up separate CI/CD pipelines for EKS infrastructure and the Galaxy application. Please follow the application deployment instructions for [EKS Blueprints using ArgoCD](https://aws-quickstart.github.io/cdk-eks-blueprints/getting-started/#deploy-workloads-with-argocd) and the [Production Environment](https://docs.galaxyproject.org/en/latest/admin/production.html) section of the Galaxy documentation.
+Regularly update all used components to benefit from the latest features and security improvements:
+
+1. [Upgrade EKS Cluster](https://aws.github.io/aws-eks-best-practices/upgrades/)
+2. [Update EKS Nodes](https://docs.aws.amazon.com/eks/latest/userguide/update-managed-node-group.html)
+3. [Upgrade Amazon Aurora Postgres](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_UpgradeDBInstance.PostgreSQL.html)
+4. [Upgrade Amazon MQ RabbitMQ](https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html)
+
 
 ### Next Steps
 
