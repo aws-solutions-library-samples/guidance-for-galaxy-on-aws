@@ -21,12 +21,12 @@ const galaxyInfraStack = new InfrastructureStack(app, 'GlxInfra', {
 const applicationStack = new ApplicationStack(app, 'GlxApp', {
   env: { account, region },
   eksCluster: providerStack.eksCluster,
-  databasePort: galaxyInfraStack.databasePort,
   databaseCluster: galaxyInfraStack.databaseCluster,
   databaseSecret: galaxyInfraStack.databaseSecret,
   rabbitmqCluster: galaxyInfraStack.rabbitmqCluster,
   rabbitmqSecret: galaxyInfraStack.rabbitmqSecret,
   fileSystem: galaxyInfraStack.fileSystem,
+  databaseProxy: galaxyInfraStack.databaseProxy,
 });
 
 cdk.Aspects.of(app).add({

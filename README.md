@@ -83,13 +83,6 @@ The outputs of this stack can be viewed, for example, via the AWS Management con
 ### Production deployment and GitOps
 
 In case your team operates an existing cluster with multiple applications or if your organization has a dedicated team who is going to centrally operate a Kubernetes cluster, it might be beneficial to set up separate CI/CD pipelines for EKS infrastructure and the Galaxy application. Please follow the application deployment instructions for [EKS Blueprints using ArgoCD](https://aws-quickstart.github.io/cdk-eks-blueprints/getting-started/#deploy-workloads-with-argocd) and the [Production Environment](https://docs.galaxyproject.org/en/latest/admin/production.html) section of the Galaxy documentation.
-Regularly update all used components to benefit from the latest features and security improvements:
-
-1. [Upgrade EKS Cluster](https://aws.github.io/aws-eks-best-practices/upgrades/)
-2. [Update EKS Nodes](https://docs.aws.amazon.com/eks/latest/userguide/update-managed-node-group.html)
-3. [Upgrade Amazon Aurora Postgres](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_UpgradeDBInstance.PostgreSQL.html)
-4. [Upgrade Amazon MQ RabbitMQ](https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html)
-
 
 ### Next Steps
 
@@ -131,6 +124,10 @@ app.node.setContext("vpc.id", "vpc-0a1234567890");
 | cloudwatch.logRetentionDays    | No                               | 30                                          | Retention policy in days for newly created CloudWatch log groups. If set to 0, logs will never expire.                                                                                                                                                                                                                                                                           |
 | rds.enableSecretRotation       | No                               | true                                        | Enables the automatic PostgreSQL key rotation after 365 days
 | mq.enableSecretRotation        | No                               | true                                        | Enables the automatic RabbitMQ key rotation after 365 days
+| rds.port                       | No                               | 2345                                        | Changes the port for the PostgreSQL database
+| rds.enableProxy                | No                               | false                                       | An additional proxy for the database is deployed
+
+
 For additional EKS and VPC configuration settings, refer to the EKS Blueprints [Quick Start Guide](https://aws-quickstart.github.io/cdk-eks-blueprints/).
 
 ##### Logging and Amazon CloudWatch integration
@@ -215,7 +212,31 @@ With the configuration file ready, you can complete Active Directory integration
 - LDAP 3 requires Active Directory to support [StartTLS](https://datatracker.ietf.org/doc/html/rfc2830) to upgrade LDAP to LDAPS. AWS Managed Microsoft AD StartTLS can be configured by following the steps in the [documentation](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/ms_ad_ldap_server_side.html).
 - Make sure Galaxy servers can establish a TCP connection to the Active Directory Domain Controllers on port 389 for LDAP and port 636 for LDAPS. This solution configures the Security Groups and Network Access Control Lists to permit those connections, but additional configuration, like [configuring routing tables](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html), may be needed if the Domain Controllers are in a different VPC/Network.
 
+#### Best practises and security advise
 
+Regularly update all used components to benefit from the latest features and security improvements:
+
+1. [Upgrade EKS Cluster](https://aws.github.io/aws-eks-best-practices/upgrades/)
+2. [Update EKS Nodes](https://docs.aws.amazon.com/eks/latest/userguide/update-managed-node-group.html)
+3. [Upgrade Amazon Aurora Postgres](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_UpgradeDBInstance.PostgreSQL.html)
+4. [Upgrade Amazon MQ RabbitMQ](https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rabbitmq-version-management.html)
+5. [Update the Galaxy Helm Chart](https://github.com/galaxyproject/galaxy-helm) 
+
+We recommend testing the upgrades in a non-production environment prior to production deployment to test for compatibility with the Guidance.
+
+Establish additional security measures. This is a non-exhaustive list and these recommendations might not be applicable and/or cost-effective for you, and are not deployed by this Guidance in the provided default configuration:
+1. [Establish database activity monitoring](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/DBActivityStreams.html)
+2. [Proxy for the database](https://aws.amazon.com/rds/proxy/): Configurable via the `rds.enableProxy` parameter. Details and additional parameters can be found in [List of available configuration settings](#list-of-available-configuration-settings).
+3. [Use VPC Flow Logs to monitor the IP traffic](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html): Configurable via the `vpc.enableFlowlogs` parameter. Details and additional parameters can be found in [List of available configuration settings](#list-of-available-configuration-settings).
+4. [Use Network Access Analyzer to identify unintended network access](https://docs.aws.amazon.com/vpc/latest/network-access-analyzer/)
+5. [Determine and establish a backup access policy](https://docs.aws.amazon.com/aws-backup/latest/devguide/create-a-vault-access-policy.html)
+6. [Monitor and protect your VPC with AWS Network Firewall](https://docs.aws.amazon.com/network-firewall/latest/developerguide/)
+7. [Protect your application with AWS Web Application Firewall and AWS Shield Advanced](https://docs.aws.amazon.com/waf/latest/developerguide/what-is-aws-waf.html)
+8. [Establish a security incident response plan](https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.html)
+9. [Restrict interpod connectivity](https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html) 
+
+## Common Issues
+* The Amazon MQ broker cannot be deployed in the Frankfurt region (eu-central-1): This is a current limitation of a specific availability zone, cf. [Amazon MQ Documentation](https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/rmq-broker-instance-types.html). As a workaround, choose a different subnet for the deployment.
 
 ## Cleanup
 
