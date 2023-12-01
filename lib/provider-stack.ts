@@ -48,7 +48,9 @@ export class ProviderStack extends cdk.Stack {
         new blueprints.addons.MetricsServerAddOn(),
         new blueprints.addons.EfsCsiDriverAddOn(),
         new blueprints.addons.ClusterAutoScalerAddOn(),
-        new blueprints.addons.VpcCniAddOn(),
+        new blueprints.addons.VpcCniAddOn({
+          enableNetworkPolicy: true,
+        }),
         new blueprints.addons.CoreDnsAddOn(),
         new blueprints.addons.KubeProxyAddOn(),
         new blueprints.addons.ExternalsSecretsAddOn({}),
@@ -85,9 +87,8 @@ export class ProviderStack extends cdk.Stack {
             cloudWatchLogs: {
               region: cdk.Stack.of(this).region,
               enabled: true,
-              logRetentionDays: this.node.tryGetContext(
-                'cloudwatch.logRetentionDays'
-              ) || 30,
+              logRetentionDays:
+                this.node.tryGetContext('cloudwatch.logRetentionDays') || 30,
             },
           },
         }),

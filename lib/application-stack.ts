@@ -37,12 +37,12 @@ function addS3bucketToLogLoadBalancerLogs(bucketname: String, prefix: String) {
 
 export interface ApplicationStackProps extends cdk.StackProps {
   eksCluster: eks.ICluster;
-  databasePort: number;
   databaseCluster: rds.IDatabaseCluster;
   databaseSecret: secretsmanager.ISecret;
   rabbitmqCluster: amazonmq.CfnBroker;
   rabbitmqSecret: secretsmanager.ISecret;
   fileSystem: efs.IFileSystem;
+  databaseProxy: rds.IDatabaseProxy;
 }
 
 export class ApplicationStack extends cdk.Stack {
@@ -318,7 +318,7 @@ export class ApplicationStack extends cdk.Stack {
         },
         postgresql: {
           deploy: false,
-          existingDatabase: `${props.databaseCluster.clusterEndpoint.hostname}:${props.databasePort}`,
+          existingDatabase: this.node.tryGetContext('rds.proxy')? `${props.databaseProxy.endpoint}:5432`: `${props.databaseCluster.clusterEndpoint.hostname}:${props.databaseCluster.clusterEndpoint.port}`, // RDS Proxy only supports default PostgreSQL port
           galaxyConnectionParams: '',
           galaxyExistingSecret: 'galaxy.credentials.postgresql',
         },

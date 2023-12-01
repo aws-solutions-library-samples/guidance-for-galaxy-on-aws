@@ -34,7 +34,6 @@
 
     "rds.minCapacity": 2,
     "rds.maxCapacity": 16,
-    "rds.autoPause": 5,
     "rds.snapshotRetentionInDays": 1,
 
     "cloudwatch.logRetentionDays": 30,

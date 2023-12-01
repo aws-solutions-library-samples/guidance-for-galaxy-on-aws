@@ -12,8 +12,8 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaPython from '@aws-cdk/aws-lambda-python-alpha';
 
-function isDefined(val: any){
-  return typeof val !== "undefined";
+function isDefined(val: any) {
+  return typeof val !== 'undefined';
 }
 
 export interface InfrastructureStackProps extends cdk.StackProps {
@@ -22,8 +22,8 @@ export interface InfrastructureStackProps extends cdk.StackProps {
 
 export class InfrastructureStack extends cdk.Stack {
   public readonly databaseCluster: rds.IDatabaseCluster;
-  public readonly databasePort: number;
   public readonly databaseSecret: secretsmanager.ISecret;
+  public readonly databaseProxy: rds.IDatabaseProxy;
   public readonly rabbitmqCluster: amazonmq.CfnBroker;
   public readonly rabbitmqSecret: secretsmanager.ISecret;
   public readonly fileSystem: efs.IFileSystem;
@@ -53,17 +53,83 @@ export class InfrastructureStack extends cdk.Stack {
       'k8s ingress'
     );
 
+    const myFileSystemPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.DENY,
+          actions: [
+            'elasticfilesystem:ClientWrite',
+            'elasticfilesystem:ClientMount',
+            'elasticfilesystem:ClientRootAccess',
+          ],
+          principals: [new iam.AnyPrincipal()],
+          resources: ['*'],
+          conditions: {
+            Bool: {
+              'aws:SecureTransport': 'false',
+            },
+          },
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'elasticfilesystem:ClientWrite',
+            'elasticfilesystem:ClientMount',
+            'elasticfilesystem:ClientRootAccess',
+          ],
+          principals: [new iam.AnyPrincipal()],
+          resources: ['*'],
+          conditions: {
+            Bool: {
+              'aws:SecureTransport': 'true',
+            },
+          },
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.DENY,
+          actions: [
+            'elasticfilesystem:ClientWrite',
+            'elasticfilesystem:ClientMount',
+            'elasticfilesystem:ClientRootAccess',
+          ],
+          principals: [new iam.AnyPrincipal()],
+          resources: ['*'],
+          conditions: {
+            NotIpAddress: {
+              'aws:SourceIp': [props.eksCluster.vpc.vpcCidrBlock],
+            },
+          },
+        }),
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'elasticfilesystem:ClientWrite',
+            'elasticfilesystem:ClientMount',
+            'elasticfilesystem:ClientRootAccess',
+          ],
+          principals: [new iam.AnyPrincipal()],
+          resources: ['*'],
+          conditions: {
+            IpAddress: {
+              'aws:SourceIp': [props.eksCluster.vpc.vpcCidrBlock],
+            },
+          },
+        }),
+      ],
+    });
+
     this.fileSystem = new efs.FileSystem(this, 'fileSystem', {
       vpc: props.eksCluster.vpc,
       securityGroup: fileSystemSecurityGroup,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      fileSystemPolicy: myFileSystemPolicy,
     });
 
     /////////////////////////////
     // # RDS
     /////////////////////////////
 
-    this.databasePort = 2345;
+    let databasePort = this.node.tryGetContext('rds.port') || 2345;
     const galaxydbuser = 'galaxydbuser';
 
     const databaseSecurityGroup = new ec2.SecurityGroup(
@@ -72,12 +138,6 @@ export class InfrastructureStack extends cdk.Stack {
       {
         vpc: props.eksCluster.vpc,
       }
-    );
-
-    databaseSecurityGroup.addIngressRule(
-      props.eksCluster.clusterSecurityGroup,
-      ec2.Port.tcp(this.databasePort),
-      'k8s ingress'
     );
 
     this.databaseSecret = new secretsmanager.Secret(this, 'databaseSecret', {
@@ -89,15 +149,18 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
-    let contexRdsEnableSecretRotation = this.node.tryGetContext('rds.enableSecretRotation')
-    const rdsEnableSecretRotation = isDefined(contexRdsEnableSecretRotation)? contexRdsEnableSecretRotation: true;
+    let contexRdsEnableSecretRotation = this.node.tryGetContext(
+      'rds.enableSecretRotation'
+    );
+    const rdsEnableSecretRotation = isDefined(contexRdsEnableSecretRotation)
+      ? contexRdsEnableSecretRotation
+      : true;
 
     if (rdsEnableSecretRotation) {
       this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
-          excludeCharacters: characterToExclueInPassword, 
-          
+          excludeCharacters: characterToExclueInPassword,
         }),
         automaticallyAfter: cdk.Duration.days(
           this.node.tryGetContext('galaxy.keyRotationInterval') || 365
@@ -115,7 +178,7 @@ export class InfrastructureStack extends cdk.Stack {
       readers: undefined,
       serverlessV2MinCapacity: this.node.tryGetContext('rds.minCapacity'),
       serverlessV2MaxCapacity: this.node.tryGetContext('rds.maxCapacity'),
-      port: this.databasePort,
+      port: databasePort,
       defaultDatabaseName: 'galaxy',
       securityGroups: [databaseSecurityGroup],
       storageEncrypted: true,
@@ -128,6 +191,39 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
+    const isRdsProxy = this.node.tryGetContext('rds.proxy');
+
+    if (isRdsProxy) {
+      const databaseProxySecurityGroup = new ec2.SecurityGroup(
+        this,
+        'databaseProxySecurityGroup',
+        {
+          vpc: props.eksCluster.vpc,
+        }
+      );
+      databaseSecurityGroup.addIngressRule(
+        databaseProxySecurityGroup,
+        ec2.Port.tcp(databasePort),
+        'proxy ingress'
+      );
+      databaseProxySecurityGroup.addIngressRule(
+        props.eksCluster.clusterSecurityGroup,
+        ec2.Port.tcp(5432),
+        'k8s ingress'
+      );
+      this.databaseProxy = new rds.DatabaseProxy(this, 'databaseProxy', {
+        proxyTarget: rds.ProxyTarget.fromCluster(this.databaseCluster),
+        secrets: [this.databaseSecret],
+        vpc: props.eksCluster.vpc,
+        securityGroups: [databaseProxySecurityGroup],
+      });
+    } else {
+      databaseSecurityGroup.addIngressRule(
+        props.eksCluster.clusterSecurityGroup,
+        ec2.Port.tcp(databasePort),
+        'k8s ingress'
+      );
+    }
     /////////////////////////////
     // # RABBITMQ
     /////////////////////////////
@@ -215,8 +311,12 @@ export class InfrastructureStack extends cdk.Stack {
     /////////////////////////////
     // # RABBITMQ SECRET ROTATION
     /////////////////////////////
-    let contextMqEnableSecretRotation = this.node.tryGetContext('mq.enableSecretRotation')
-    const mqEnableSecretRotation = isDefined(contextMqEnableSecretRotation)? contextMqEnableSecretRotation: true;
+    let contextMqEnableSecretRotation = this.node.tryGetContext(
+      'mq.enableSecretRotation'
+    );
+    const mqEnableSecretRotation = isDefined(contextMqEnableSecretRotation)
+      ? contextMqEnableSecretRotation
+      : true;
     if (mqEnableSecretRotation) {
       const lambdaMqSecretRotatingRole = new iam.Role(
         this,
