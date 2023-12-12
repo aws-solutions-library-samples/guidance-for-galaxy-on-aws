@@ -11,15 +11,17 @@ const app = new cdk.App();
 const account = process.env.CDK_DEFAULT_ACCOUNT;
 const region = process.env.CDK_DEFAULT_REGION;
 
-const providerStack = new ProviderStack(app, 'Provider', {env: { account, region }});
+const providerStack = new ProviderStack(app, 'Provider', {env: { account, region }, description: "EKS Cluster Stack - Guidance for Galaxy on AWS (SO9346)"});
 
 const galaxyInfraStack = new InfrastructureStack(app, 'GlxInfra', {
   env: { account, region },
+  description: "Infrastructure DB,RDS,MQ Stack - Guidance for Galaxy on AWS (SO9346)",
   eksCluster: providerStack.eksCluster,
 });
 
 const applicationStack = new ApplicationStack(app, 'GlxApp', {
   env: { account, region },
+  description: "Galaxy  Application Stack - Guidance for Galaxy on AWS (SO9346)",
   eksCluster: providerStack.eksCluster,
   databaseCluster: galaxyInfraStack.databaseCluster,
   databaseSecret: galaxyInfraStack.databaseSecret,
