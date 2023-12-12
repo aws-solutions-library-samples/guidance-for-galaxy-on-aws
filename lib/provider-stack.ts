@@ -116,6 +116,7 @@ export class ProviderStack extends cdk.Stack {
       }
 
       const eksClusterStack = eksClusterBuilder.build(this, 'EKS');
+      eksClusterStack.addMetadata('description', 'EKS Cluster Stack - Guidance for Galaxy on AWS (SO9346)')
 
       this.eksCluster = eksClusterStack.getClusterInfo().cluster;
 
