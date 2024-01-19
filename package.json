@@ -1,6 +1,6 @@
 {
   "name": "guidance-for-galaxy-on-aws",
-  "version": "1.0",
+  "version": "0.1.0",
   "license": "MIT-0",
   "bin": {
     "galaxy": "bin/galaxy.js"
@@ -14,7 +14,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.1",
     "@types/node": "^18.15.12",
-    "aws-cdk": "2.99.1",
+    "aws-cdk": "2.122.0",
     "cdk-nag": "^2.27.186",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
@@ -22,10 +22,14 @@
     "typescript": "~5.0.4"
   },
   "dependencies": {
-    "@aws-quickstart/eks-blueprints": "1.12.0",
-    "aws-cdk-lib": "2.99.1",
-    "@aws-cdk/aws-lambda-python-alpha": "^2.39.0-alpha.0",
+    "@aws-quickstart/eks-blueprints": "1.13.1",
+    "aws-cdk-lib": "2.122.0",
+    "@aws-cdk/aws-lambda-python-alpha": "2.122.0-alpha.0",
     "constructs": "^10.2.1",
     "source-map-support": "^0.5.21"
+  },
+  "overrides": {
+    "aws-cdk-lib": "2.122.0",
+    "aws-cdk": "2.122.0"
   }
 }

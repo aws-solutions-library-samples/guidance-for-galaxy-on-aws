@@ -258,6 +258,7 @@ export class ApplicationStack extends cdk.Stack {
       repository:
         'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
       namespace: namespace,
+      version: "5.8.0",
       timeout: cdk.Duration.minutes(10),
       values: {
         configs: {
