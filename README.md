@@ -43,7 +43,7 @@ This guidance can be deployed with Windows, Mac and Linux, both with x86_64 and 
 
 - [Create an AWS account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html) if you do not already have one and log in. The IAM user that you use must have sufficient permissions to make necessary AWS service calls and manage AWS resources.
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured
-- [AWS Cloud Development Kit v2](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) >= 2.104.0 installed
+- [AWS Cloud Development Kit v2](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) >= 2.122.0 installed
 
 ### Third-party tools
 - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) installed
