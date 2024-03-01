@@ -258,7 +258,7 @@ export class ApplicationStack extends cdk.Stack {
       repository:
         'https://raw.githubusercontent.com/CloudVE/helm-charts/master/',
       namespace: namespace,
-      version: "5.8.0",
+      version: "5.9.0",
       timeout: cdk.Duration.minutes(10),
       values: {
         configs: {
@@ -376,6 +376,12 @@ export class ApplicationStack extends cdk.Stack {
         persistence: {
           storageClass: 'efs-sc',
           accessMode: 'ReadWriteMany',
+        },
+        // Value cannot be updated on exisiting deployment
+        jobs: {
+          priorityClass: {
+              value: 1000 // The k8s autoscaler only spins up new nodes up for priority larger than -10.
+            }
         },
       },
     });
