@@ -376,7 +376,7 @@ export class InfrastructureStack extends cdk.Stack {
       );
       const lambdaArchitecture = 
         isDefined(contextLambdaArchitecture) &&
-        contextLambdaArchitecture == 'true'
+        contextLambdaArchitecture == true
           ? lambda.Architecture.ARM_64
           : lambda.Architecture.X86_64;
 
