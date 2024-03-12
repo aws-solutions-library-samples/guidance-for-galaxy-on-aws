@@ -212,9 +212,9 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
-    const isRdsProxy = this.node.tryGetContext('rds.proxy');
+    const enableRdsProxy = this.node.tryGetContext('rds.enableProxy');
 
-    if (isRdsProxy) {
+    if (enableRdsProxy) {
       const databaseProxySecurityGroup = new ec2.SecurityGroup(
         this,
         'databaseProxySecurityGroup',
@@ -232,13 +232,6 @@ export class InfrastructureStack extends cdk.Stack {
         ec2.Port.tcp(5432),
         'k8s ingress'
       );
-      if (rdsEnableSecretRotation) {
-        databaseProxySecurityGroup.addIngressRule(
-          lambdaDBSecretRotationSecurityGroup,
-          ec2.Port.tcp(5432),
-          'lambda key rotation ingress'
-        );
-      }
       this.databaseProxy = new rds.DatabaseProxy(this, 'databaseProxy', {
         proxyTarget: rds.ProxyTarget.fromCluster(this.databaseCluster),
         secrets: [this.databaseSecret],
@@ -251,13 +244,13 @@ export class InfrastructureStack extends cdk.Stack {
         ec2.Port.tcp(databasePort),
         'k8s ingress'
       );
-      if (rdsEnableSecretRotation) {
-        databaseSecurityGroup.addIngressRule(
-          lambdaDBSecretRotationSecurityGroup,
-          ec2.Port.tcp(databasePort),
-          'lambda key rotation ingress'
-        );
-      }
+    }
+    if (rdsEnableSecretRotation) {
+      databaseSecurityGroup.addIngressRule(
+        lambdaDBSecretRotationSecurityGroup,
+        ec2.Port.tcp(databasePort),
+        'lambda key rotation ingress'
+      );
     }
 
     /////////////////////////////
@@ -374,7 +367,7 @@ export class InfrastructureStack extends cdk.Stack {
       const contextLambdaArchitecture = this.node.tryGetContext(
         'lambda.arm64keyRotationArch'
       );
-      const lambdaArchitecture = 
+      const lambdaArchitecture =
         isDefined(contextLambdaArchitecture) &&
         contextLambdaArchitecture == true
           ? lambda.Architecture.ARM_64
