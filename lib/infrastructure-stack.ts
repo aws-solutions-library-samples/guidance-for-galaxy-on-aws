@@ -371,16 +371,22 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
 
+      const contextLambdaArchitecture = this.node.tryGetContext(
+        'lambda.arm64keyRotationArchitecture'
+      );
+      const lambdaArchitecture = 
+        isDefined(contextLambdaArchitecture) &&
+        contextLambdaArchitecture == 'true'
+          ? lambda.Architecture.ARM_64
+          : lambda.Architecture.X86_64;
+
       const lambdaMqSecretRotatingLayer = new lambdaPython.PythonLayerVersion(
         this,
         'lambdaMqSecretRotatingLayer',
         {
           entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-          compatibleArchitectures: [
-            lambda.Architecture.ARM_64,
-            lambda.Architecture.X86_64,
-          ],
+          compatibleArchitectures: [lambdaArchitecture],
           layerVersionName: 'lambdaMqSecretRotatingLayer',
         }
       );
@@ -399,7 +405,7 @@ export class InfrastructureStack extends cdk.Stack {
           },
           layers: [lambdaMqSecretRotatingLayer],
           vpc: props.eksCluster.vpc,
-          architecture: lambda.Architecture.ARM_64,
+          architecture: lambdaArchitecture,
           securityGroups: [lambdaMqSecurityGroup],
         }
       );
