@@ -126,7 +126,7 @@ export class InfrastructureStack extends cdk.Stack {
     });
 
     /////////////////////////////
-    // # RDS
+    // # Aurora
     /////////////////////////////
 
     let databasePort = this.node.tryGetContext('rds.port') || 2345;
@@ -149,18 +149,39 @@ export class InfrastructureStack extends cdk.Stack {
       },
     });
 
-    let contexRdsEnableSecretRotation = this.node.tryGetContext(
+    let contextRdsEnableSecretRotation = this.node.tryGetContext(
       'rds.enableSecretRotation'
     );
-    const rdsEnableSecretRotation = isDefined(contexRdsEnableSecretRotation)
-      ? contexRdsEnableSecretRotation
+
+    const rdsEnableSecretRotation = isDefined(contextRdsEnableSecretRotation)
+      ? contextRdsEnableSecretRotation
       : true;
+
+    const lambdaDBSecretRotationSecurityGroup = new ec2.SecurityGroup(
+      this,
+      'lambdaGalaxyDBSecretRotationSecurityGroup',
+      {
+        vpc: props.eksCluster.vpc,
+      }
+    );
+
+    // Deploy the security group only when key rotation is enabled
+    (
+      lambdaDBSecretRotationSecurityGroup.node
+        .defaultChild as cdk.aws_ec2.CfnSecurityGroup
+    ).cfnOptions.condition = rdsEnableSecretRotation;
 
     if (rdsEnableSecretRotation) {
       this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
           excludeCharacters: characterToExclueInPassword,
+          securityGroups: [
+            lambdaDBSecretRotationSecurityGroup ||
+              new ec2.SecurityGroup(this, 'cdkworkaroundsg', {
+                vpc: props.eksCluster.vpc,
+              }),
+          ],
         }),
         automaticallyAfter: cdk.Duration.days(
           this.node.tryGetContext('galaxy.keyRotationInterval') || 365
@@ -211,6 +232,13 @@ export class InfrastructureStack extends cdk.Stack {
         ec2.Port.tcp(5432),
         'k8s ingress'
       );
+      if (rdsEnableSecretRotation) {
+        databaseProxySecurityGroup.addIngressRule(
+          lambdaDBSecretRotationSecurityGroup,
+          ec2.Port.tcp(5432),
+          'lambda key rotation ingress'
+        );
+      }
       this.databaseProxy = new rds.DatabaseProxy(this, 'databaseProxy', {
         proxyTarget: rds.ProxyTarget.fromCluster(this.databaseCluster),
         secrets: [this.databaseSecret],
@@ -223,7 +251,15 @@ export class InfrastructureStack extends cdk.Stack {
         ec2.Port.tcp(databasePort),
         'k8s ingress'
       );
+      if (rdsEnableSecretRotation) {
+        databaseSecurityGroup.addIngressRule(
+          lambdaDBSecretRotationSecurityGroup,
+          ec2.Port.tcp(databasePort),
+          'lambda key rotation ingress'
+        );
+      }
     }
+
     /////////////////////////////
     // # RABBITMQ
     /////////////////////////////
@@ -341,7 +377,7 @@ export class InfrastructureStack extends cdk.Stack {
         {
           entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-          compatibleArchitectures: [
+          compatibleArchitectures: [lambda.Architecture.ARM_64],
             lambda.Architecture.ARM_64,
             lambda.Architecture.X86_64,
           ],
