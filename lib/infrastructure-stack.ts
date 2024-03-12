@@ -377,7 +377,7 @@ export class InfrastructureStack extends cdk.Stack {
         {
           entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-          compatibleArchitectures: [lambda.Architecture.ARM_64],
+          compatibleArchitectures: [
             lambda.Architecture.ARM_64,
             lambda.Architecture.X86_64,
           ],
