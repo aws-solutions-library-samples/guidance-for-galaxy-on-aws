@@ -372,7 +372,7 @@ export class InfrastructureStack extends cdk.Stack {
       );
 
       const contextLambdaArchitecture = this.node.tryGetContext(
-        'lambda.arm64keyRotationArchitecture'
+        'lambda.arm64keyRotationArch'
       );
       const lambdaArchitecture = 
         isDefined(contextLambdaArchitecture) &&
