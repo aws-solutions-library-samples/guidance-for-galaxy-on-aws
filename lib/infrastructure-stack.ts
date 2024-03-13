@@ -176,12 +176,7 @@ export class InfrastructureStack extends cdk.Stack {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
           excludeCharacters: characterToExclueInPassword,
-          securityGroups: [
-            lambdaDBSecretRotationSecurityGroup ||
-              new ec2.SecurityGroup(this, 'cdkworkaroundsg', {
-                vpc: props.eksCluster.vpc,
-              }),
-          ],
+          securityGroups: [lambdaDBSecretRotationSecurityGroup],
         }),
         automaticallyAfter: cdk.Duration.days(
           this.node.tryGetContext('galaxy.keyRotationInterval') || 365
