@@ -126,8 +126,6 @@ app.node.setContext("vpc.id", "vpc-0a1234567890");
 | mq.enableSecretRotation        | No                               | true                                        | Enables the automatic RabbitMQ key rotation after 365 days                                                                                                      |
 | rds.port                       | No                               | 2345                                        | Changes the port for the PostgreSQL database                                                                                                      |
 | rds.enableProxy                | No                               | false                                       | An additional proxy for the database is deployed                                                                                                      |
-| lambda.arm64keyRotationArch    | No                               | false                                       | Whether ARM64 is used for the architecture of the RabbitMQ key rotation Lambda function. Defaults to x86_64.                                                                                                      |
-
 
 For additional EKS and VPC configuration settings, refer to the EKS Blueprints [Quick Start Guide](https://aws-quickstart.github.io/cdk-eks-blueprints/).
 
