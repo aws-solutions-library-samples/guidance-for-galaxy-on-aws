@@ -157,21 +157,15 @@ export class InfrastructureStack extends cdk.Stack {
       ? contextRdsEnableSecretRotation
       : true;
 
-    const lambdaDBSecretRotationSecurityGroup = new ec2.SecurityGroup(
-      this,
-      'lambdaGalaxyDBSecretRotationSecurityGroup',
-      {
-        vpc: props.eksCluster.vpc,
-      }
-    );
-
-    // Deploy the security group only when key rotation is enabled
-    (
-      lambdaDBSecretRotationSecurityGroup.node
-        .defaultChild as cdk.aws_ec2.CfnSecurityGroup
-    ).cfnOptions.condition = rdsEnableSecretRotation;
-
     if (rdsEnableSecretRotation) {
+      const lambdaDBSecretRotationSecurityGroup = new ec2.SecurityGroup(
+        this,
+        'lambdaGalaxyDBSecretRotationSecurityGroup',
+        {
+          vpc: props.eksCluster.vpc,
+        }
+      );
+
       this.databaseSecret.addRotationSchedule('rotateDBkey', {
         hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser({
           vpc: props.eksCluster.vpc,
@@ -182,6 +176,11 @@ export class InfrastructureStack extends cdk.Stack {
           this.node.tryGetContext('galaxy.keyRotationInterval') || 365
         ),
       });
+      databaseSecurityGroup.addIngressRule(
+        lambdaDBSecretRotationSecurityGroup,
+        ec2.Port.tcp(databasePort),
+        'lambda key rotation ingress'
+      );
     }
 
     this.databaseCluster = new rds.DatabaseCluster(this, 'databaseCluster', {
@@ -238,13 +237,6 @@ export class InfrastructureStack extends cdk.Stack {
         props.eksCluster.clusterSecurityGroup,
         ec2.Port.tcp(databasePort),
         'k8s ingress'
-      );
-    }
-    if (rdsEnableSecretRotation) {
-      databaseSecurityGroup.addIngressRule(
-        lambdaDBSecretRotationSecurityGroup,
-        ec2.Port.tcp(databasePort),
-        'lambda key rotation ingress'
       );
     }
 
@@ -359,14 +351,6 @@ export class InfrastructureStack extends cdk.Stack {
         }
       );
 
-      const contextLambdaArchitecture = this.node.tryGetContext(
-        'lambda.arm64keyRotationArch'
-      );
-      const lambdaArchitecture =
-        isDefined(contextLambdaArchitecture) &&
-        contextLambdaArchitecture == true
-          ? lambda.Architecture.ARM_64
-          : lambda.Architecture.X86_64;
 
       const lambdaMqSecretRotatingLayer = new lambdaPython.PythonLayerVersion(
         this,
@@ -374,7 +358,6 @@ export class InfrastructureStack extends cdk.Stack {
         {
           entry: 'resources/lambda_mq_secret_rotating_layer',
           compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-          compatibleArchitectures: [lambdaArchitecture],
           layerVersionName: 'lambdaMqSecretRotatingLayer',
         }
       );
@@ -393,7 +376,6 @@ export class InfrastructureStack extends cdk.Stack {
           },
           layers: [lambdaMqSecretRotatingLayer],
           vpc: props.eksCluster.vpc,
-          architecture: lambdaArchitecture,
           securityGroups: [lambdaMqSecurityGroup],
         }
       );
