@@ -107,7 +107,7 @@ export class ProviderStack extends cdk.Stack {
         .region(cdk.Stack.of(this).region)
         .addOns(...addOns)
         .enableControlPlaneLogTypes(...controlPlaneLogs)
-        .version(eks.KubernetesVersion.V1_27);
+        .version(eks.KubernetesVersion.V1_28);
       if (existingVpcId) {
         eksClusterBuilder.resourceProvider(
           blueprints.GlobalResources.Vpc,
