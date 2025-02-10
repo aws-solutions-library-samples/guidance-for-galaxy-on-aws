@@ -185,7 +185,7 @@ export class InfrastructureStack extends cdk.Stack {
 
     this.databaseCluster = new rds.DatabaseCluster(this, 'databaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_13_10,
+        version: rds.AuroraPostgresEngineVersion.VER_16_1
       }),
       vpc: props.eksCluster.vpc,
       credentials: rds.Credentials.fromSecret(this.databaseSecret),
@@ -284,7 +284,7 @@ export class InfrastructureStack extends cdk.Stack {
         ? 'CLUSTER_MULTI_AZ'
         : 'SINGLE_INSTANCE',
       engineType: 'RABBITMQ',
-      engineVersion: '3.11.16',
+      engineVersion: '3.13',
       hostInstanceType: rabbitMQInstanceSize,
       publiclyAccessible: false,
       users: [
